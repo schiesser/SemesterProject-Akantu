@@ -1,3 +1,5 @@
+import akantu as aka
+
 
 class Support:
     def __init__(self, elem_filter, fem, spatial_dimension, elemtype, ghost_type):
@@ -6,6 +8,7 @@ class Support:
         self.spatial_dimension = spatial_dimension
         self.elemtype = elemtype
         self.ghost_type = ghost_type
+
 
 class TensorField:
     def __init__(self, name, support):
@@ -24,6 +27,7 @@ class TensorField:
     def __mul__(self, f):
         return DotField(self, f)
 
+
 class NodalTensorField(TensorField):
     def __init__(self, name, support, nodal_field):
         super().__init__(name, support)
@@ -31,11 +35,13 @@ class NodalTensorField(TensorField):
 
     def evalOnQuadraturePoints(self, output):
         self.support.fem.interpolateOnIntegrationPoints(
-            self.nodal_field, output, self.nodal_field.shape[0]*self.nodal_field.shape[1], self.support.elemtype)
+            self.nodal_field, output, output.shape[1], self.support.elemtype)
+
 
 class IntegrationPointTensorField(TensorField):
     def evalOnQuadraturePoints(self, output):
         raise NotImplementedError
+
 
 class DotField(TensorField):
     def __init__(self, f1, f2):
@@ -51,6 +57,7 @@ class DotField(TensorField):
         for i in range(len(output)):
             output[i] = o1[i] * o2[i]
 
+
 class GradientOperator(TensorField):
     def evalOnQuadraturePoints(self, output):
         shapes_derivatives = self.support.fem.getShapesDerivatives(
@@ -58,12 +65,14 @@ class GradientOperator(TensorField):
         )
         output[:] = shapes_derivatives
 
+
 class FieldIntegrator:
     @staticmethod
     def integrate(field, support):
         nb_element = len(support.elem_filter)
         nb_nodes_per_element = Mesh.getNbNodesPerElement(support.elemtype)
-        res = np.zeros((nb_element, nb_nodes_per_element * support.spatial_dimension))
+        res = np.zeros((nb_element, nb_nodes_per_element *
+                       support.spatial_dimension))
 
         nb_component = field.getNbComponent()
 

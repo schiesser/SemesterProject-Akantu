@@ -24,12 +24,12 @@ def plotMesh(coords, connectivity, **kwargs):
     plt.show()
 
 def meshGeo(filename, dim=2, order=1):
-    ret = subprocess.run(f"gmsh -2 -order 1 -o tmp.msh {filename}", shell=True)
+    out = os.path.splitext(filename)[0] + '.msh'
+    ret = subprocess.run(f"gmsh -2 -order 1 -o {out} {filename}", shell=True)
     if ret.returncode:
         print("Beware, gmsh could not run: mesh is not generated")
     else:
         print("Mesh generated")
-        mesh = readMesh('tmp.msh')
-        os.remove('tmp.msh')
+        mesh = readMesh(out)
         return mesh
     return None
