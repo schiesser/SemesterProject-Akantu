@@ -34,8 +34,10 @@ class NodalTensorField(TensorField):
         self.nodal_field = nodal_field
 
     def evalOnQuadraturePoints(self, output):
-        self.support.fem.interpolateOnIntegrationPoints(
-            self.nodal_field, output, output.shape[1], self.support.elemtype)
+        #help(self.support.fem.interpolateOnIntegrationPoints)
+        #self.support.fem.interpolateOnIntegrationPoints(
+        #self.nodal_field, output, output.shape[1], self.support.elemtype)
+        self.support.fem.interpolateOnIntegrationPoints(self.nodal_field, output)
 
 
 class IntegrationPointTensorField(TensorField):
