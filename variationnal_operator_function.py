@@ -1,5 +1,5 @@
 import akantu as aka
-
+import numpy as np
 
 class Support:
     def __init__(self, elem_filter, fem, spatial_dimension, elemtype, ghost_type):
@@ -63,24 +63,25 @@ class DotField(TensorField):
 class GradientOperator(TensorField):
     def evalOnQuadraturePoints(self, output):
         shapes_derivatives = self.support.fem.getShapesDerivatives(
-            self.support.elemtype, self.support.ghost_type
-        )
+            self.support.elemtype)
+        
         output[:] = shapes_derivatives
 
 
 class FieldIntegrator:
     @staticmethod
-    def integrate(field, support):
-        nb_element = len(support.elem_filter)
-        nb_nodes_per_element = Mesh.getNbNodesPerElement(support.elemtype)
-        res = np.zeros((nb_element, nb_nodes_per_element *
-                       support.spatial_dimension))
+    def integrate(field, support, mesh):
+        
 
-        nb_component = field.getNbComponent()
-
-        field_eval = np.array([])
+        field_eval = aka.ElementTypeMapArrayReal()
+        field_eval.initialize(mesh, nb_component=1)
         field.evalOnQuadraturePoints(field_eval)
 
-        support.fem.integrate(field_eval, res, nb_component, support.elemtype,
-                              support.ghost_type, support.elem_filter)
-        return res
+        #nb_element = mesh.getConnectivity(support.elemtype).shape[0]
+        #nb_nodes_per_element = mesh.getConnectivity(support.elemtype).shape[1]
+        #res = np.zeros((nb_element, nb_nodes_per_element * support.spatial_dimension))
+        
+        #help(support.fem.integrate)
+        abc=support.fem.integrate(field_eval(support.elemtype), support.elemtype,filter_elements=support.elem_filter)
+        #support.fem.integrate(field_eval(support.elemtype),res,1, support.elemtype)
+        return abc
