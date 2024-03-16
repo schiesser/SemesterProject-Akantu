@@ -38,10 +38,11 @@ Sup = Support(elem_filter, fem, spatial_dimension, elemtype, ghost_type)
 
 # create a field  
 nodes = mesh.getNodes()
-nodal_field=np.ones(nodes.shape)*2
+nodal_field=np.ones(nodes.shape)*3
 nodal_field[0,0]=1
-nodal_field[2,0]=0.5
+nodal_field[2,0]=1
 print(nodal_field)
+print(conn)
 
 # output vector (will be filled by the method "interpolateOnIntegrationPoints")
 ## to adapt depending on the number of quadrature points (support)
@@ -61,8 +62,7 @@ print(value_on_quadpoints)
 shapeDer=Sup.fem.getShapesDerivatives(Sup.elemtype)
 print(shapeDer)
 print(shapeDer.shape)
-print(shapeDer[0,1])
-gradu=np.array([2,-3])
+gradu=np.array([-1,5])
 print(value_on_quadpoints.shape)
 gradu=gradu.reshape(value_on_quadpoints.shape)
 print(gradu)

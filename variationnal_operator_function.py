@@ -80,6 +80,7 @@ class FieldIntegrator:
         #nb_element = mesh.getConnectivity(support.elemtype).shape[0]
         #nb_nodes_per_element = mesh.getConnectivity(support.elemtype).shape[1]
         #res = np.zeros((nb_element, nb_nodes_per_element * support.spatial_dimension))
+        #res = np.zeros((nb_element, 1 * support.spatial_dimension))
         
         #help(support.fem.integrate)
         abc=support.fem.integrate(field_eval(support.elemtype), support.elemtype,filter_elements=support.elem_filter)
