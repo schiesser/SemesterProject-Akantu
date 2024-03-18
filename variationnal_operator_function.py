@@ -61,28 +61,29 @@ class DotField(TensorField):
 
 
 class GradientOperator(TensorField):
+    def __init__(self, support):
+        super().__init__("gradient", support)
+
     def evalOnQuadraturePoints(self, output):
         shapes_derivatives = self.support.fem.getShapesDerivatives(
             self.support.elemtype)
         
-        output[:] = shapes_derivatives
+        output[:,:] = shapes_derivatives
 
 
 class FieldIntegrator:
     @staticmethod
     def integrate(field, support, mesh):
         
-
         field_eval = aka.ElementTypeMapArrayReal()
         field_eval.initialize(mesh, nb_component=1)
         field.evalOnQuadraturePoints(field_eval)
 
-        #nb_element = mesh.getConnectivity(support.elemtype).shape[0]
+        nb_element = mesh.getConnectivity(support.elemtype).shape[0]
         #nb_nodes_per_element = mesh.getConnectivity(support.elemtype).shape[1]
-        #res = np.zeros((nb_element, nb_nodes_per_element * support.spatial_dimension))
-        #res = np.zeros((nb_element, 1 * support.spatial_dimension))
+        res = np.zeros((nb_element, 1 * support.spatial_dimension)) #for one quadrature point per elem
         
         #help(support.fem.integrate)
-        abc=support.fem.integrate(field_eval(support.elemtype), support.elemtype,filter_elements=support.elem_filter)
-        #support.fem.integrate(field_eval(support.elemtype),res,1, support.elemtype)
-        return abc
+        #abc=support.fem.integrate(field_eval(support.elemtype), support.elemtype,filter_elements=support.elem_filter)
+        support.fem.integrate(field_eval(support.elemtype),res,1, support.elemtype)
+        return res
