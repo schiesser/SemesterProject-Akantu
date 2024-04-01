@@ -33,11 +33,15 @@ class NodalTensorField(TensorField):
         super().__init__(name, support)
         self.nodal_field = nodal_field
 
+    def getFieldDimension(self):
+        return self.nodal_field.shape[1]
+    #ajout fonction getdim
+
     def evalOnQuadraturePoints(self, output):
         #help(self.support.fem.interpolateOnIntegrationPoints)
-        #self.support.fem.interpolateOnIntegrationPoints(
-        #self.nodal_field, output, output.shape[1], self.support.elemtype)
-        self.support.fem.interpolateOnIntegrationPoints(self.nodal_field, output)
+        self.support.fem.interpolateOnIntegrationPoints(
+        self.nodal_field, output, output.shape[1], self.support.elemtype)
+        #self.support.fem.interpolateOnIntegrationPoints(self.nodal_field, output)
 
 
 class IntegrationPointTensorField(TensorField):
@@ -75,15 +79,21 @@ class FieldIntegrator:
     @staticmethod
     def integrate(field, support, mesh):
         
-        field_eval = aka.ElementTypeMapArrayReal()
-        field_eval.initialize(mesh, nb_component=1)
+        numberIntegrationPoint = support.fem.getNbIntegrationPoints(support.elemtype)
+        field_dim= field.getFieldDimension()
+        nb_element = mesh.getConnectivity(support.elemtype).shape[0]
+        field_eval=np.zeros((nb_element*numberIntegrationPoint,field_dim))
+        #field_eval = aka.ElementTypeMapArrayReal()
+        #field_eval.initialize(mesh, nb_component=1)
         field.evalOnQuadraturePoints(field_eval)
 
-        nb_element = mesh.getConnectivity(support.elemtype).shape[0]
         #nb_nodes_per_element = mesh.getConnectivity(support.elemtype).shape[1]
-        res = np.zeros((nb_element, 1 * support.spatial_dimension)) #for one quadrature point per elem
+        res = np.zeros((nb_element, field_dim )) #for one quadrature point per elem
         
         #help(support.fem.integrate)
         #abc=support.fem.integrate(field_eval(support.elemtype), support.elemtype,filter_elements=support.elem_filter)
-        support.fem.integrate(field_eval(support.elemtype),res,1, support.elemtype)
-        return res
+        support.fem.integrate(field_eval,res,field_dim, support.elemtype)
+
+        integration = res
+        #integration=np.sum(res,axis=0)
+        return integration
