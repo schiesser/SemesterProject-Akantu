@@ -49,9 +49,9 @@ model.initFull(_analysis_method=aka._static)
 
 elem_filter = np.array([[0]])
 fem = model.getFEEngine()
-elemtype = aka._triangle_3
+elem_type = aka._triangle_3
 ghost_type = aka.GhostType(1) #peu importe pour le moment
-Sup = Support(elem_filter, fem, spatial_dimension, elemtype, ghost_type)
+Sup = Support(elem_filter, fem, spatial_dimension, elem_type, ghost_type)
 
 ## Interpolation
 
@@ -78,30 +78,29 @@ print(conn)
 # Interpolation (avec 2ème méthode de "interpolateOnIntegrationPoints")
 NTF = NodalTensorField("ex_displacement", Sup, nodal_field)
 
-numberIntegrationPoint = fem.getNbIntegrationPoints(Sup.elemtype)
-nb_element = mesh.getConnectivity(Sup.elemtype).shape[0]
-value_on_quadpoints=np.zeros((numberIntegrationPoint*nb_element,NTF.getFieldDimension())) #dimension : nbr quad point x field dimension
+nb_integration_points = fem.getNbIntegrationPoints(Sup.elem_type)
+nb_element = mesh.getConnectivity(Sup.elem_type).shape[0]
+value_integration_points=np.zeros((nb_integration_points*nb_element,NTF.getFieldDimension())) #dimension : nbr quad point x field dimension
 
 '''
 Si element type map array :
-#output = aka.ElementTypeMapArrayReal() 
-#output.initialize(mesh, nb_component=1)
+#value_integration_points = aka.ElementTypeMapArrayReal() 
+#value_integration_points.initialize(mesh, nb_component=1)
 '''
 
-NTF.evalOnQuadraturePoints(value_on_quadpoints)
+NTF.evalOnQuadraturePoints(value_integration_points)
 
 '''
 Si element type map array :
-value_on_quadpoints=value_on_quadpoints(aka._segment_2)
+value_integration_points=value_integration_points(aka._segment_2)
 '''
 
 print("valeurs aux points de quadrature du support")
-print(value_on_quadpoints)
-print(value_on_quadpoints.shape)
+print(value_integration_points)
 
-# Integration
+# Integrate
 
 print("Integration depl : ")
 #help(Sup.fem.integrate)
-integrationDepl=FieldIntegrator.integrate(NTF, Sup, mesh)
-print(integrationDepl)
+integration_depl=FieldIntegrator.integrate(NTF, Sup, mesh)
+print(integration_depl)

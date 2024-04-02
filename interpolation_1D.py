@@ -32,48 +32,44 @@ model.initFull(_analysis_method=aka._static)
 
 elem_filter = np.array([[0]])
 fem = model.getFEEngine()
-elemtype = aka._segment_2
+elem_type = aka._segment_2
 ghost_type = aka.GhostType(1) #peu importe pour le moment
-Sup = Support(elem_filter, fem, spatial_dimension, elemtype, ghost_type)
+Sup = Support(elem_filter, fem, spatial_dimension, elem_type, ghost_type)
 
 # Interpolation
 
 ## create a field  
 nodes = mesh.getNodes()
 
-
+'''
 ### Cas d'un champ scalaire :
 nodal_field=np.ones(nodes.shape)*3
 nodal_field[0,0]=2 #première coordonnée : numérotation du noeud; deuxième coordonnée : selon dimensions (ici 1D)
 nodal_field[2,0]=1
-
 '''
 ### Cas d'un champ vectoriel :
 nodal_field=np.ones((nodes.shape[0],nodes.shape[1]+1))*3
 nodal_field[0,0]=2 #première coordonnée : numérotation du noeud; deuxième coordonnée : selon dimensions (ici champ 2D)
 nodal_field[2,0]=1
-'''
 
 print("nodal_field testé :")
 print(nodal_field)
 print("avec les connections :")
 print(conn)
 
-
-# Interpolation (avec 2ème méthode de "interpolateOnIntegrationPoints")
 NTF = NodalTensorField("ex_displacement", Sup, nodal_field)
 
-numberIntegrationPoints = fem.getNbIntegrationPoints(Sup.elemtype)
-nb_element = mesh.getConnectivity(Sup.elemtype).shape[0]
-value_on_quadpoints=np.zeros((numberIntegrationPoints*nb_element,NTF.getFieldDimension())) #dimension : nbr quad point x field dimension
+nb_integration_points = fem.getNbIntegrationPoints(Sup.elem_type)
+nb_element = mesh.getConnectivity(Sup.elem_type).shape[0]
+value_integration_points=np.zeros((nb_integration_points*nb_element,NTF.getFieldDimension())) #dimension : nbr quad point x field dimension
 
 '''
 Si element type map array :
-#output = aka.ElementTypeMapArrayReal()
-#output.initialize(mesh, nb_component=1)
+#value_integration_points = aka.ElementTypeMapArrayReal()
+#value_integration_points.initialize(mesh, nb_component=1)
 '''
 
-NTF.evalOnQuadraturePoints(value_on_quadpoints)
+NTF.evalOnQuadraturePoints(value_integration_points)
 
 '''
 Si element type map array :
@@ -81,29 +77,22 @@ value_on_quadpoints=value_on_quadpoints(aka._segment_2)
 '''
 
 print("valeurs aux points de quadrature du support")
-print(value_on_quadpoints)
-print(value_on_quadpoints.shape)
-
+print(value_integration_points)
 
 # Integrate
 
 ## deplacement
-integrationDepl=FieldIntegrator.integrate(NTF, Sup, mesh)
-print("Integration : ")
-print(integrationDepl)
+integration_depl=FieldIntegrator.integrate(NTF, Sup, mesh)
+print("Integration du déplacement: ")
+print(integration_depl)
 
+'''
 ## gradient deplacement
-derivativeShapes=Sup.fem.getShapesDerivatives(Sup.elemtype)
+derivative_shapes=Sup.fem.getShapesDerivatives(Sup.elem_type)
 
-extandedDerivativeShapes=np.tile(derivativeShapes,(NTF.getFieldDimension(),1,1))
+extanded_derivative_shapes=np.tile(derivative_shapes,(NTF.getFieldDimension(),1,1))
 nodalfieldmod=np.swapaxes(nodal_field[conn],0,-1)
-graddispl=np.sum(np.multiply(nodalfieldmod,extandedDerivativeShapes),axis=-1)
+grad_depl=np.sum(np.multiply(nodalfieldmod,extanded_derivative_shapes),axis=-1)
 print("gradient associé au champ de deplacement :")
-print(graddispl)
-
-
-field_dim= NTF.getFieldDimension()
-res = np.zeros((nb_element, field_dim ))
-Sup.fem.integrate(graddispl,res,field_dim, Sup.elemtype)
-print("Résultat de l'intégration")
-print(res)
+print(grad_depl)
+'''
