@@ -3,11 +3,18 @@ import numpy as np
 
 class Support:
     def __init__(self, elem_filter, fem, spatial_dimension, elemtype, ghost_type):
-        self.elem_filter = elem_filter
+        self.elem_filter = elem_filter #ici : akaArray
         self.fem = fem
         self.spatial_dimension = spatial_dimension
         self.elemtype = elemtype
         self.ghost_type = ghost_type
+
+    '''
+    def __init__(self, elem_filter, fem, spatial_dimension, ghost_type):
+        self.elem_filter = elem_filter #ici : ElementTypeMapArrayInt
+        self.fem = fem
+        self.spatial_dimension = spatial_dimension
+    '''
 
 
 class TensorField:
@@ -35,13 +42,12 @@ class NodalTensorField(TensorField):
 
     def getFieldDimension(self):
         return self.nodal_field.shape[1]
-    #ajout fonction getdim
 
     def evalOnQuadraturePoints(self, output):
         #help(self.support.fem.interpolateOnIntegrationPoints)
         self.support.fem.interpolateOnIntegrationPoints(
         self.nodal_field, output, output.shape[1], self.support.elemtype)
-        #self.support.fem.interpolateOnIntegrationPoints(self.nodal_field, output)
+        #self.support.fem.interpolateOnIntegrationPoints(self.nodal_field, output, self.support.elem_filter)
 
 
 class IntegrationPointTensorField(TensorField):
@@ -84,14 +90,13 @@ class FieldIntegrator:
         nb_element = mesh.getConnectivity(support.elemtype).shape[0]
         field_eval=np.zeros((nb_element*numberIntegrationPoint,field_dim))
         #field_eval = aka.ElementTypeMapArrayReal()
-        #field_eval.initialize(mesh, nb_component=1)
+        #field_eval.initialize(mesh, nb_component=self.support.spatial_dimension)
         field.evalOnQuadraturePoints(field_eval)
 
-        #nb_nodes_per_element = mesh.getConnectivity(support.elemtype).shape[1]
         res = np.zeros((nb_element, field_dim )) #for one quadrature point per elem
         
         #help(support.fem.integrate)
-        #abc=support.fem.integrate(field_eval(support.elemtype), support.elemtype,filter_elements=support.elem_filter)
+        #abc=support.fem.integrate(field_eval(support."elemtype"),res,field_dim, elemtype,support.elemtype,filter_elements=support.elem_filter)#passer elemfilter en akaArray
         support.fem.integrate(field_eval,res,field_dim, support.elemtype)
 
         integration = res

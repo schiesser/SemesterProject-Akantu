@@ -70,27 +70,17 @@ nodal_field[0,0]=2 #première coordonnée : numérotation du noeud; deuxième co
 nodal_field[2,1]=1
 '''
 
-
 print("nodal_field testé :")
 print(nodal_field)
 print("avec les connections :")
 print(conn)
 
-'''
-Pour l'interpolation avec la première méthode de "interpolateOnIntegrationPoints", exception resize temporary array
-# output vector (will be filled by the method "interpolateOnIntegrationPoints")
-## to adapt depending on the number of quadrature points (support)
-nbr_elem = mesh.getConnectivity(Sup.elemtype).shape[0]
-output=np.zeros((nbr_elem,1)) # avec 1 point de quadrature par élément
-'''
-
-#interpolation (avec 2ème méthode de "interpolateOnIntegrationPoints")
+# Interpolation (avec 2ème méthode de "interpolateOnIntegrationPoints")
 NTF = NodalTensorField("ex_displacement", Sup, nodal_field)
 
 numberIntegrationPoint = fem.getNbIntegrationPoints(Sup.elemtype)
 nb_element = mesh.getConnectivity(Sup.elemtype).shape[0]
-output=np.zeros((numberIntegrationPoint*nb_element,NTF.getFieldDimension())) #dimension : nbr quad point x field dimension
-print(output.shape)
+value_on_quadpoints=np.zeros((numberIntegrationPoint*nb_element,NTF.getFieldDimension())) #dimension : nbr quad point x field dimension
 
 '''
 Si element type map array :
@@ -98,19 +88,20 @@ Si element type map array :
 #output.initialize(mesh, nb_component=1)
 '''
 
-NTF.evalOnQuadraturePoints(output)
+NTF.evalOnQuadraturePoints(value_on_quadpoints)
 
 '''
 Si element type map array :
-value_on_quadpoints=output(aka._segment_2)
+value_on_quadpoints=value_on_quadpoints(aka._segment_2)
 '''
 
-value_on_quadpoints=output
 print("valeurs aux points de quadrature du support")
 print(value_on_quadpoints)
+print(value_on_quadpoints.shape)
 
+# Integration
 
-print("Integration : ")
+print("Integration depl : ")
 #help(Sup.fem.integrate)
-res=FieldIntegrator.integrate(NTF, Sup, mesh)
-print(res)
+integrationDepl=FieldIntegrator.integrate(NTF, Sup, mesh)
+print(integrationDepl)
