@@ -75,28 +75,14 @@ print(nodal_field)
 print("avec les connections :")
 print(conn)
 
-# Interpolation (avec 2ème méthode de "interpolateOnIntegrationPoints")
-NTF = NodalTensorField("ex_displacement", Sup, nodal_field)
 
-nb_integration_points = fem.getNbIntegrationPoints(Sup.elem_type)
-nb_element = mesh.getConnectivity(Sup.elem_type).shape[0]
-value_integration_points=np.zeros((nb_integration_points*nb_element,NTF.getFieldDimension())) #dimension : nbr quad point x field dimension
+NTF = NodalTensorField("ex_displacement", Sup, nodal_field, mesh)
 
-'''
-Si element type map array :
-#value_integration_points = aka.ElementTypeMapArrayReal() 
-#value_integration_points.initialize(mesh, nb_component=1)
-'''
+NTF.evalOnQuadraturePoints()
 
-NTF.evalOnQuadraturePoints(value_integration_points)
-
-'''
-Si element type map array :
-value_integration_points=value_integration_points(aka._segment_2)
-'''
 
 print("valeurs aux points de quadrature du support")
-print(value_integration_points)
+print(NTF.value_integration_points)
 
 # Integrate
 

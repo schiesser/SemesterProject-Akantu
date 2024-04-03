@@ -9,13 +9,6 @@ class Support:
         self.elem_type = elem_type
         self.ghost_type = ghost_type
 
-    '''
-    def __init__(self, elem_filter, fem, spatial_dimension, ghost_type):
-        self.elem_filter = elem_filter #ici : ElementTypeMapArrayInt
-        self.fem = fem
-        self.spatial_dimension = spatial_dimension
-    '''
-
 
 class TensorField:
     def __init__(self, name, support):
@@ -36,19 +29,21 @@ class TensorField:
 
 
 class NodalTensorField(TensorField):
-    def __init__(self, name, support, nodal_field):
+    def __init__(self, name, support, nodal_field, mesh): # attention mesh
         super().__init__(name, support)
         self.nodal_field = nodal_field
+        nb_integration_points = self.support.fem.getNbIntegrationPoints(support.elem_type)
+        nb_element = mesh.getConnectivity(self.support.elem_type).shape[0]
+        self.value_integration_points = np.zeros((nb_integration_points*nb_element,nodal_field.shape[1])) #dimension : nbr quad point x field dimension
 
     def getFieldDimension(self):
         return self.nodal_field.shape[1]
 
-    def evalOnQuadraturePoints(self, output):
+    def evalOnQuadraturePoints(self):
         #help(self.support.fem.interpolateOnIntegrationPoints)
         self.support.fem.interpolateOnIntegrationPoints(
-        self.nodal_field, output, output.shape[1], self.support.elem_type)
-        #self.support.fem.interpolateOnIntegrationPoints(self.nodal_field, output, self.support.elem_filter)
-
+        self.nodal_field, self.value_integration_points, self.value_integration_points.shape[1], self.support.elem_type)
+        
 
 class IntegrationPointTensorField(TensorField):
     def evalOnQuadraturePoints(self, output):
@@ -83,22 +78,18 @@ class GradientOperator(TensorField):
 
 class FieldIntegrator:
     @staticmethod
-    def integrate(field, support, mesh):
+    def integrate(field, support, mesh): #Attention mesh
         
-        number_integration_points = support.fem.getNbIntegrationPoints(support.elem_type)
         field_dim= field.getFieldDimension()
         nb_element = mesh.getConnectivity(support.elem_type).shape[0]
-        field_eval=np.zeros((nb_element*number_integration_points,field_dim))
 
-        #field_eval = aka.ElementTypeMapArrayReal()
-        #field_eval.initialize(mesh, nb_component=self.support.spatial_dimension)
-        field.evalOnQuadraturePoints(field_eval)
+        field.evalOnQuadraturePoints()
 
-        result_integration = np.zeros((nb_element, field_dim )) #for one quadrature point per elem
+        nb_integration_points = support.fem.getNbIntegrationPoints(support.elem_type)
+        result_integration = np.zeros((nb_element*nb_integration_points, field_dim ))
         
         #help(support.fem.integrate)
-        #abc=support.fem.integrate(field_eval(support."elem_type"),res,field_dim, elemtype,support.elem_type,filter_elements=support.elem_filter)#passer elemfilter en akaArray
-        support.fem.integrate(field_eval,result_integration,field_dim, support.elem_type)
+        support.fem.integrate(field.value_integration_points,result_integration,field_dim, support.elem_type)
 
         integration=np.sum(result_integration,axis=0)
 

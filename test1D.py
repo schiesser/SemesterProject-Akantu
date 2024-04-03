@@ -57,27 +57,12 @@ print(nodal_field)
 print("avec les connections :")
 print(conn)
 
-NTF = NodalTensorField("ex_displacement", Sup, nodal_field)
+NTF = NodalTensorField("ex_displacement", Sup, nodal_field,mesh)
 
-nb_integration_points = fem.getNbIntegrationPoints(Sup.elem_type)
-nb_element = mesh.getConnectivity(Sup.elem_type).shape[0]
-value_integration_points=np.zeros((nb_integration_points*nb_element,NTF.getFieldDimension())) #dimension : nbr quad point x field dimension
-
-'''
-Si element type map array :
-#value_integration_points = aka.ElementTypeMapArrayReal()
-#value_integration_points.initialize(mesh, nb_component=1)
-'''
-
-NTF.evalOnQuadraturePoints(value_integration_points)
-
-'''
-Si element type map array :
-value_on_quadpoints=value_on_quadpoints(aka._segment_2)
-'''
+NTF.evalOnQuadraturePoints()
 
 print("valeurs aux points de quadrature du support")
-print(value_integration_points)
+print(NTF.value_integration_points)
 
 # Integrate
 
@@ -85,14 +70,3 @@ print(value_integration_points)
 integration_depl=FieldIntegrator.integrate(NTF, Sup, mesh)
 print("Integration du déplacement: ")
 print(integration_depl)
-
-'''
-## gradient deplacement
-derivative_shapes=Sup.fem.getShapesDerivatives(Sup.elem_type)
-
-extanded_derivative_shapes=np.tile(derivative_shapes,(NTF.getFieldDimension(),1,1))
-nodalfieldmod=np.swapaxes(nodal_field[conn],0,-1)
-grad_depl=np.sum(np.multiply(nodalfieldmod,extanded_derivative_shapes),axis=-1)
-print("gradient associé au champ de deplacement :")
-print(grad_depl)
-'''
