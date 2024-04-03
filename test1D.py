@@ -70,3 +70,9 @@ print(NTF.value_integration_points)
 integration_depl=FieldIntegrator.integrate(NTF, Sup, mesh)
 print("Integration du déplacement: ")
 print(integration_depl)
+
+# addition tenseur avec constante
+newNTF=(NTF * 3)
+integration=FieldIntegrator.integrate(newNTF, Sup, mesh)
+print("Integration de la fonction de tenseur : ")
+print(integration)

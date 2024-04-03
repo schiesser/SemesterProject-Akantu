@@ -25,21 +25,68 @@ class TensorField:
         raise NotImplementedError
 
     def __mul__(self, f):
-        return DotField(self, f)
+        return MultField(self, f)
+    
+    def __add__(self, f):
+        return AddField(self, f)
+
+
+class AddField(TensorField):
+
+    def __init__(self, f1, f2):
+        if isinstance(f2, (int, float)):
+            super().__init__(f1.name + "+" + "constant", f1.support)
+        elif isinstance(f2, TensorField):
+            super().__init__(f1.name + "+" + f2.name, f1.support)
+
+        self.f = f2 #est un field ou une constante
+        self.field1 = f1
+
+    def getFieldDimension(self):
+        return self.field1.value_integration_points.shape[1]
+    
+    def evalOnQuadraturePoints(self):
+
+        self.field1.evalOnQuadraturePoints()
+
+        if isinstance(self.f, (int, float)):
+            self.value_integration_points = self.field1.value_integration_points + self.f
+        
+        elif isinstance(self.f, TensorField):
+            self.f.evalOnQuadraturePoints()
+            self.value_integration_points = self.field1.value_integration_points + self.f.value_integration_points
+
+
+class MultField(TensorField):
+
+    def __init__(self, f1, f2):
+        self.constant = f2
+        self.field1 = f1
+        self.value_integration_points = None
+
+    def getFieldDimension(self):
+        return self.field1.value_integration_points.shape[1]
+    
+    def evalOnQuadraturePoints(self):
+        self.field1.evalOnQuadraturePoints()
+        self.value_integration_points = self.field1.value_integration_points * self.constant
 
 
 class NodalTensorField(TensorField):
     def __init__(self, name, support, nodal_field, mesh): # attention mesh
         super().__init__(name, support)
         self.nodal_field = nodal_field
-        nb_integration_points = self.support.fem.getNbIntegrationPoints(support.elem_type)
-        nb_element = mesh.getConnectivity(self.support.elem_type).shape[0]
-        self.value_integration_points = np.zeros((nb_integration_points*nb_element,nodal_field.shape[1])) #dimension : nbr quad point x field dimension
+        self.value_integration_points = None
 
+        self.nb_element = mesh.getConnectivity(self.support.elem_type).shape[0] #mettre dans evalOn...
+        
     def getFieldDimension(self):
         return self.nodal_field.shape[1]
 
     def evalOnQuadraturePoints(self):
+        nb_integration_points = self.support.fem.getNbIntegrationPoints(self.support.elem_type)
+        self.value_integration_points = np.zeros((nb_integration_points*self.nb_element,self.nodal_field.shape[1])) #dimension : nbr quad point x field dimension
+        
         #help(self.support.fem.interpolateOnIntegrationPoints)
         self.support.fem.interpolateOnIntegrationPoints(
         self.nodal_field, self.value_integration_points, self.value_integration_points.shape[1], self.support.elem_type)
