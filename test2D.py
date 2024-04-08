@@ -90,3 +90,9 @@ print("Integration depl : ")
 #help(Sup.fem.integrate)
 integration_depl=FieldIntegrator.integrate(NTF, Sup, mesh)
 print(integration_depl)
+
+# addition tenseur avec constante
+newNTF=(NTF*2 + 1)
+integration=FieldIntegrator.integrate(newNTF, Sup, mesh)
+print("Integration de la fonction de tenseur : ")
+print(integration)

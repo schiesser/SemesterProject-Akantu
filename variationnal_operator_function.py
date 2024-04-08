@@ -20,30 +20,35 @@ class TensorField:
 
     def getNbComponent(self):
         raise NotImplementedError
+    
+    def getFieldDimension(self):
+        pass
 
     def transpose(self):
         raise NotImplementedError
 
     def __mul__(self, f):
-        return MultField(self, f)
+        return ConstantMultiplication(self, f)
     
     def __add__(self, f):
-        return AddField(self, f)
+        return Addition(self, f)
+    
 
 
-class AddField(TensorField):
+class Addition(TensorField):
 
     def __init__(self, f1, f2):
         if isinstance(f2, (int, float)):
-            super().__init__(f1.name + "+" + "constant", f1.support)
+            super().__init__("("+f1.name + ".ConstantAddition"+")", f1.support)
         elif isinstance(f2, TensorField):
-            super().__init__(f1.name + "+" + f2.name, f1.support)
+            super().__init__("("+f1.name + " + " + f2.name+")", f1.support)
 
         self.f = f2 #est un field ou une constante
         self.field1 = f1
+        self.value_integration_points = None
 
     def getFieldDimension(self):
-        return self.field1.value_integration_points.shape[1]
+        return self.value_integration_points.shape[1] #ok si utilisé après un "evalOnQua..."
     
     def evalOnQuadraturePoints(self):
 
@@ -57,15 +62,16 @@ class AddField(TensorField):
             self.value_integration_points = self.field1.value_integration_points + self.f.value_integration_points
 
 
-class MultField(TensorField):
+class ConstantMultiplication(TensorField):
 
     def __init__(self, f1, f2):
+        super().__init__("("+f1.name + ".ConstantMultiplication"+")", f1.support)
         self.constant = f2
         self.field1 = f1
         self.value_integration_points = None
 
     def getFieldDimension(self):
-        return self.field1.value_integration_points.shape[1]
+        return self.value_integration_points.shape[1]
     
     def evalOnQuadraturePoints(self):
         self.field1.evalOnQuadraturePoints()
@@ -127,10 +133,10 @@ class FieldIntegrator:
     @staticmethod
     def integrate(field, support, mesh): #Attention mesh
         
+        field.evalOnQuadraturePoints()
+
         field_dim= field.getFieldDimension()
         nb_element = mesh.getConnectivity(support.elem_type).shape[0]
-
-        field.evalOnQuadraturePoints()
 
         nb_integration_points = support.fem.getNbIntegrationPoints(support.elem_type)
         result_integration = np.zeros((nb_element*nb_integration_points, field_dim ))
