@@ -71,38 +71,52 @@ integration_depl=FieldIntegrator.integrate(NTF, Sup, mesh)
 print("Integration du déplacement: ")
 print(integration_depl)
 
-# addition tenseur avec constante
-newNTF=(NTF*3 + 3)
-integration=FieldIntegrator.integrate(newNTF, Sup, mesh)
-print("Integration de la fonction de tenseur : ")
-print(integration)
-print(newNTF.name)
-
-# addition tenseur avec constante
-newNTF=((NTF+1)*3)
-integration=FieldIntegrator.integrate(newNTF, Sup, mesh)
-print("Integration de la fonction de tenseur : ")
-print(integration)
-print(newNTF.name)
-
-# addition tenseur avec constante
-newNTF=(NTF+(-1))
-integration=FieldIntegrator.integrate(newNTF, Sup, mesh)
-print("Integration de la fonction de tenseur : ")
-print(integration)
-
-# addition tenseur avec constante
-newNTF=(NTF*3 + 3)
-integration=FieldIntegrator.integrate(newNTF, Sup, mesh)
-print("Integration de la fonction de tenseur : ")
-print(integration)
-print(newNTF.name)
+# Opérations sur tenseur
 
 NTF2 = NodalTensorField("displacement2", Sup, nodal_field,mesh)
 
-# addition tenseur avec constante
+print("Test opérations sur tenseur : ")
+## test1 : composition avec addition et multiplication (scalaire)
+newNTF=(NTF*3 + 3)
+integration=FieldIntegrator.integrate(newNTF, Sup, mesh)
+print("Integration test1 a  : ")
+print(integration)
+print(newNTF.name)
+
+newNTF=((NTF+1)*3)
+integration=FieldIntegrator.integrate(newNTF, Sup, mesh)
+print("Integration test1 b : ")
+print(integration)
+print(newNTF.name)
+
+print("-----------------")
+
+## test2 : soustraction (avec scalaire et tenseur) 
+newNTF=(NTF-1)
+integration=FieldIntegrator.integrate(newNTF, Sup, mesh)
+print("Integration de la fonction de tenseur : ")
+print(integration)
+print(newNTF.name)
+
+newNTF=(NTF-NTF)
+integration=FieldIntegrator.integrate(newNTF, Sup, mesh)
+print("Integration de la fonction de tenseur : ")
+print(integration)
+print(newNTF.name)
+
+print("-----------------")
+
+## test3 : composition entre tenseur
 newNTF=((NTF+NTF2)*3)
 integration=FieldIntegrator.integrate(newNTF, Sup, mesh)
 print("Integration de la fonction de tenseur : ")
 print(integration)
 print(newNTF.name)
+
+newNTF=(NTF*6)
+integration=FieldIntegrator.integrate(newNTF, Sup, mesh)
+print("Integration de la fonction de tenseur : ")
+print(integration)
+print(newNTF.name)
+
+print("-----------------")

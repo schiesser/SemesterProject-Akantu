@@ -33,6 +33,9 @@ class TensorField:
     def __add__(self, f):
         return Addition(self, f)
     
+    def __sub__(self, f):
+        return subtraction(self, f)
+    
 
 
 class Addition(TensorField):
@@ -60,6 +63,33 @@ class Addition(TensorField):
         elif isinstance(self.f, TensorField):
             self.f.evalOnQuadraturePoints()
             self.value_integration_points = self.field1.value_integration_points + self.f.value_integration_points
+
+
+class subtraction(TensorField):
+
+    def __init__(self, f1, f2):
+        if isinstance(f2, (int, float)):
+            super().__init__("("+f1.name + ".ConstantSubstraction"+")", f1.support)
+        elif isinstance(f2, TensorField):
+            super().__init__("("+f1.name + " - " + f2.name+")", f1.support)
+
+        self.f = f2 #est un field ou une constante
+        self.field1 = f1
+        self.value_integration_points = None
+
+    def getFieldDimension(self):
+        return self.value_integration_points.shape[1] #ok si utilisé après un "evalOnQua..."
+    
+    def evalOnQuadraturePoints(self):
+
+        self.field1.evalOnQuadraturePoints()
+
+        if isinstance(self.f, (int, float)):
+            self.value_integration_points = self.field1.value_integration_points - self.f
+        
+        elif isinstance(self.f, TensorField):
+            self.f.evalOnQuadraturePoints()
+            self.value_integration_points = self.field1.value_integration_points - self.f.value_integration_points
 
 
 class ConstantMultiplication(TensorField):
