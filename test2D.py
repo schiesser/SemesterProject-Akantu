@@ -76,7 +76,7 @@ print("avec les connections :")
 print(conn)
 
 
-NTF = NodalTensorField("ex_displacement", Sup, nodal_field, mesh)
+NTF = NodalTensorField("ex_displacement", Sup, nodal_field)
 
 NTF.evalOnQuadraturePoints()
 
@@ -88,11 +88,11 @@ print(NTF.value_integration_points)
 
 print("Integration depl : ")
 #help(Sup.fem.integrate)
-integration_depl=FieldIntegrator.integrate(NTF, Sup, mesh)
+integration_depl=FieldIntegrator.integrate(NTF, Sup)
 print(integration_depl)
 
 # addition tenseur avec constante
 newNTF=(NTF*2 + 1)
-integration=FieldIntegrator.integrate(newNTF, Sup, mesh)
+integration=FieldIntegrator.integrate(newNTF, Sup)
 print("Integration de la fonction de tenseur : ")
 print(integration)

@@ -30,13 +30,21 @@ class TensorField:
     def __mul__(self, f):
         return ConstantMultiplication(self, f)
     
+    def __rmul__(self,f):
+        return self.__mul__(f)
+    
     def __add__(self, f):
         return Addition(self, f)
+    
+    def __radd__(self, f):
+        return self.__add__(f)
     
     def __sub__(self, f):
         return subtraction(self, f)
     
-
+    def __rsub__(self, f):
+        return self.__sub__(f)
+    
 
 class Addition(TensorField):
 
@@ -68,6 +76,7 @@ class Addition(TensorField):
 class subtraction(TensorField):
 
     def __init__(self, f1, f2):
+        
         if isinstance(f2, (int, float)):
             super().__init__("("+f1.name + ".ConstantSubstraction"+")", f1.support)
         elif isinstance(f2, TensorField):
@@ -78,7 +87,7 @@ class subtraction(TensorField):
         self.value_integration_points = None
 
     def getFieldDimension(self):
-        return self.value_integration_points.shape[1] #ok si utilisé après un "evalOnQua..."
+        return self.value_integration_points.shape[1]
     
     def evalOnQuadraturePoints(self):
 
@@ -109,11 +118,11 @@ class ConstantMultiplication(TensorField):
 
 
 class NodalTensorField(TensorField):
-    def __init__(self, name, support, nodal_field, mesh): # attention mesh
+    def __init__(self, name, support, nodal_field):
         super().__init__(name, support)
         self.nodal_field = nodal_field
         self.value_integration_points = None
-
+        mesh = support.fem.getMesh()
         self.nb_element = mesh.getConnectivity(self.support.elem_type).shape[0] #mettre dans evalOn...
         
     def getFieldDimension(self):
@@ -161,11 +170,12 @@ class GradientOperator(TensorField):
 
 class FieldIntegrator:
     @staticmethod
-    def integrate(field, support, mesh): #Attention mesh
+    def integrate(field, support):
         
         field.evalOnQuadraturePoints()
 
         field_dim= field.getFieldDimension()
+        mesh=support.fem.getMesh()
         nb_element = mesh.getConnectivity(support.elem_type).shape[0]
 
         nb_integration_points = support.fem.getNbIntegrationPoints(support.elem_type)
