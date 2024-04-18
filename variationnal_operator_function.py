@@ -56,6 +56,9 @@ class Operator(TensorField):
         self.support = self.first.support
 
         self.value_integration_points = None
+
+    def getFieldDimension(self):
+        return self.value_integration_points.shape[1] #ok si utilisé après un "evalOnQua..."
                 
 class Addition(Operator):
 
@@ -67,9 +70,6 @@ class Addition(Operator):
             self.name = "("+ f1.name + ".ConstantAddition"+")"
         elif isinstance(f2, TensorField):
             self.name = "("+ f1.name + " + " + f2.name + ")"
-
-    def getFieldDimension(self):
-        return self.value_integration_points.shape[1] #ok si utilisé après un "evalOnQua..."
     
     def evalOnQuadraturePoints(self):
 
@@ -94,9 +94,6 @@ class Substraction(Operator):
         elif isinstance(f2, TensorField):
             self.name = "("+ f1.name + " - " + f2.name + ")"
 
-    def getFieldDimension(self):
-        return self.value_integration_points.shape[1] #ok si utilisé après un "evalOnQua..."
-    
     def evalOnQuadraturePoints(self):
 
         self.first.evalOnQuadraturePoints()
@@ -120,9 +117,6 @@ class Multiplication(Operator):
         elif isinstance(f2, TensorField):
             self.name = "("+ f1.name + " * " + f2.name + ")"
 
-    def getFieldDimension(self):
-        return self.value_integration_points.shape[1] #ok si utilisé après un "evalOnQua..."
-    
     def evalOnQuadraturePoints(self):
 
         self.first.evalOnQuadraturePoints()
@@ -186,9 +180,6 @@ class GradientOperator(Operator):
         super().__init__(f1)
 
         self.name = "Gradient(" + f1.name + ")"
-
-    def getFieldDimension(self):
-        return self.value_integration_points.shape[1] #ok si utilisé après un "evalOnQua..."
 
     def evalOnQuadraturePoints(self):
         shapes_derivatives = self.support.fem.getShapesDerivatives(
