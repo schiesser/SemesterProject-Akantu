@@ -3,7 +3,7 @@ import numpy as np
 
 class Support:
     def __init__(self, elem_filter, fem, spatial_dimension, elem_type, ghost_type):
-        self.elem_filter = elem_filter #ici : akaArray
+        self.elem_filter = elem_filter #akaArray
         self.fem = fem
         self.spatial_dimension = spatial_dimension
         self.elem_type = elem_type
@@ -15,11 +15,8 @@ class TensorField:
         self.name = name
         self.support = support
 
-    def evalOnQuadraturePoints(self, output):
+    def evalOnQuadraturePoints(self):
         pass
-
-    def getNbComponent(self):
-        raise NotImplementedError
     
     def getFieldDimension(self):
         pass
@@ -28,7 +25,7 @@ class TensorField:
         raise NotImplementedError
 
     def __mul__(self, f):
-        return ConstantMultiplication(self, f)
+        return Multiplication(self, f)
     
     def __rmul__(self,f):
         return self.__mul__(f)
@@ -40,82 +37,102 @@ class TensorField:
         return self.__add__(f)
     
     def __sub__(self, f):
-        return subtraction(self, f)
+        return Substraction(self, f)
     
     def __rsub__(self, f):
         return self.__sub__(f)
     
+class Operator(TensorField):
 
-class Addition(TensorField):
+    def __init__(self, *args ):
+
+        if len(args) == 2:
+            self.first = args[0]
+            self.second = args[1]
+        elif len(args) == 1:
+            self.first = args[0]
+            self.second = None
+            
+        self.support = self.first.support
+
+        self.value_integration_points = None
+                
+class Addition(Operator):
 
     def __init__(self, f1, f2):
-        if isinstance(f2, (int, float)):
-            super().__init__("("+f1.name + ".ConstantAddition"+")", f1.support)
-        elif isinstance(f2, TensorField):
-            super().__init__("("+f1.name + " + " + f2.name+")", f1.support)
 
-        self.f = f2 #est un field ou une constante
-        self.field1 = f1
-        self.value_integration_points = None
+        super().__init__(f1, f2)
+
+        if isinstance(f2, (int, float)):
+            self.name = "("+ f1.name + ".ConstantAddition"+")"
+        elif isinstance(f2, TensorField):
+            self.name = "("+ f1.name + " + " + f2.name + ")"
 
     def getFieldDimension(self):
         return self.value_integration_points.shape[1] #ok si utilisé après un "evalOnQua..."
     
     def evalOnQuadraturePoints(self):
 
-        self.field1.evalOnQuadraturePoints()
+        self.first.evalOnQuadraturePoints()
 
-        if isinstance(self.f, (int, float)):
-            self.value_integration_points = self.field1.value_integration_points + self.f
+        if isinstance(self.second, (int, float)):
+            self.value_integration_points = self.first.value_integration_points + self.second
         
-        elif isinstance(self.f, TensorField):
-            self.f.evalOnQuadraturePoints()
-            self.value_integration_points = self.field1.value_integration_points + self.f.value_integration_points
+        elif isinstance(self.second, TensorField):
+            self.second.evalOnQuadraturePoints()
+            self.value_integration_points = self.first.value_integration_points + self.second.value_integration_points
 
 
-class subtraction(TensorField):
+class Substraction(Operator):
 
     def __init__(self, f1, f2):
-        
+
+        super().__init__(f1, f2)
+
         if isinstance(f2, (int, float)):
-            super().__init__("("+f1.name + ".ConstantSubstraction"+")", f1.support)
+            self.name = "("+f1.name + ".ConstantSubstraction"+")"
         elif isinstance(f2, TensorField):
-            super().__init__("("+f1.name + " - " + f2.name+")", f1.support)
-
-        self.f = f2 #est un field ou une constante
-        self.field1 = f1
-        self.value_integration_points = None
+            self.name = "("+ f1.name + " - " + f2.name + ")"
 
     def getFieldDimension(self):
-        return self.value_integration_points.shape[1]
+        return self.value_integration_points.shape[1] #ok si utilisé après un "evalOnQua..."
     
     def evalOnQuadraturePoints(self):
 
-        self.field1.evalOnQuadraturePoints()
+        self.first.evalOnQuadraturePoints()
 
-        if isinstance(self.f, (int, float)):
-            self.value_integration_points = self.field1.value_integration_points - self.f
+        if isinstance(self.second, (int, float)):
+            self.value_integration_points = self.first.value_integration_points - self.second
         
-        elif isinstance(self.f, TensorField):
-            self.f.evalOnQuadraturePoints()
-            self.value_integration_points = self.field1.value_integration_points - self.f.value_integration_points
+        elif isinstance(self.second, TensorField):
+            self.second.evalOnQuadraturePoints()
+            self.value_integration_points = self.first.value_integration_points - self.second.value_integration_points
 
 
-class ConstantMultiplication(TensorField):
+class Multiplication(Operator):
 
     def __init__(self, f1, f2):
-        super().__init__("("+f1.name + ".ConstantMultiplication"+")", f1.support)
-        self.constant = f2
-        self.field1 = f1
-        self.value_integration_points = None
+
+        super().__init__(f1, f2)
+
+        if isinstance(f2, (int, float)):
+            self.name = "("+f1.name + ".ConstantMultiplication"+")"
+        elif isinstance(f2, TensorField):
+            self.name = "("+ f1.name + " * " + f2.name + ")"
 
     def getFieldDimension(self):
-        return self.value_integration_points.shape[1]
+        return self.value_integration_points.shape[1] #ok si utilisé après un "evalOnQua..."
     
     def evalOnQuadraturePoints(self):
-        self.field1.evalOnQuadraturePoints()
-        self.value_integration_points = self.field1.value_integration_points * self.constant
 
+        self.first.evalOnQuadraturePoints()
+
+        if isinstance(self.second, (int, float)):
+            self.value_integration_points = self.first.value_integration_points * self.second
+        
+        elif isinstance(self.second, TensorField):
+            self.second.evalOnQuadraturePoints()
+            self.value_integration_points = self.first.value_integration_points * self.second.value_integration_points
 
 class NodalTensorField(TensorField):
     def __init__(self, name, support, nodal_field):
@@ -132,7 +149,7 @@ class NodalTensorField(TensorField):
         nb_integration_points = self.support.fem.getNbIntegrationPoints(self.support.elem_type)
         self.value_integration_points = np.zeros((nb_integration_points*self.nb_element,self.nodal_field.shape[1])) #dimension : nbr quad point x field dimension
         
-        #help(self.support.fem.interpolateOnIntegrationPoints)
+        # help(self.support.fem.interpolateOnIntegrationPoints)
         self.support.fem.interpolateOnIntegrationPoints(
         self.nodal_field, self.value_integration_points, self.value_integration_points.shape[1], self.support.elem_type)
         
@@ -142,7 +159,7 @@ class IntegrationPointTensorField(TensorField):
         raise NotImplementedError
 
 
-class DotField(TensorField):
+class DotField(Operator):
     def __init__(self, f1, f2):
         super().__init__(f1.name + "." + f2.name, f1.support)
         self.field1 = f1
@@ -156,21 +173,35 @@ class DotField(TensorField):
         for i in range(len(output)):
             output[i] = o1[i] * o2[i]
 
-
-class GradientOperator(TensorField):
+class ShapeField(TensorField):
     def __init__(self, support):
-        super().__init__("gradient", support)
-
-    def evalOnQuadraturePoints(self, output):
-        shapes_derivatives = self.support.fem.getShapesDerivatives(
-            self.support.elemtype)
+        super().__init__("shape_function", support)
+        self.value_integration_points = None
         
-        output[:,:] = shapes_derivatives
+    def evalOnQuadraturePoints(self):
+        self.value_integration_points = self.support.fem.getShapesDerivatives(self.support.elem_type)
 
+class GradientOperator(Operator):
+    def __init__(self, f1):
+        super().__init__(f1)
 
+        self.name = "Gradient(" + f1.name + ")"
+
+    def getFieldDimension(self):
+        return self.value_integration_points.shape[1] #ok si utilisé après un "evalOnQua..."
+
+    def evalOnQuadraturePoints(self):
+        shapes_derivatives = self.support.fem.getShapesDerivatives(
+            self.support.elem_type)
+        #à modifier
+
+        self.value_integration_points = shapes_derivatives
+        
 class FieldIntegrator:
     @staticmethod
-    def integrate(field, support):
+    def integrate(field):
+        
+        support=field.support
         
         field.evalOnQuadraturePoints()
 

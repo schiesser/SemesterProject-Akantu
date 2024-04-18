@@ -48,78 +48,22 @@ nodal_field[0,0]=2 #première coordonnée : numérotation du noeud; deuxième co
 nodal_field[2,0]=1
 '''
 ### Cas d'un champ vectoriel :
-nodal_field=np.ones((nodes.shape[0],nodes.shape[1]+1))*3
-nodal_field[0,0]=2 #première coordonnée : numérotation du noeud; deuxième coordonnée : selon dimensions (ici champ 2D)
-nodal_field[2,0]=1
+nodal_vector=np.ones((nodes.shape[0],nodes.shape[1]))*3
+nodal_vector[0,0]=2 #première coordonnée : numérotation du noeud; deuxième coordonnée : selon dimensions (ici champ 2D)
+nodal_vector[2,0]=1
 
 '''print("nodal_field testé :")
 print(nodal_field)
 print("avec les connections :")
 print(conn)'''
 
-NTF = NodalTensorField("displacement1", Sup, nodal_field)
 
-NTF.evalOnQuadraturePoints()
+# Gradient 
 
-#print("valeurs aux points de quadrature du support")
-#print(NTF.value_integration_points)
+NTF2 = NodalTensorField("displacement2", Sup, nodal_vector)
 
-# Integrate
 
-## deplacement
-integration_depl=FieldIntegrator.integrate(NTF, Sup)
-print("Integration du déplacement: ")
-print(integration_depl)
 
-# Opérations sur tenseur
-
-NTF2 = NodalTensorField("displacement2", Sup, nodal_field)
-
-print("Test opérations sur tenseur : ")
-
-## test1 : composition avec addition et multiplication (scalaire)
-newNTF=(3 + NTF*3 )
-integration=FieldIntegrator.integrate(newNTF, Sup)
-print("Integration test1 a  : ")
-print(integration)
-print(newNTF.name)
-
-newNTF=((NTF+1)*3)
-integration=FieldIntegrator.integrate(newNTF, Sup)
-print("Integration test1 b : ")
-print(integration)
-print(newNTF.name)
-
-print("-----------------")
-
-## test2 : soustraction (avec scalaire et tenseur) 
-newNTF=(NTF-1)
-integration=FieldIntegrator.integrate(newNTF, Sup)
-print("Integration de la fonction de tenseur : ")
-print(integration)
-print(newNTF.name)
-
-newNTF=(NTF-NTF2)
-integration=FieldIntegrator.integrate(newNTF, Sup)
-print("Integration de la fonction de tenseur : ")
-print(integration)
-print(newNTF.name)
-
-print("-----------------")
-
-## test3 : composition entre tenseur
-newNTF=((NTF+NTF2)*3)
-integration=FieldIntegrator.integrate(newNTF, Sup)
-print("Integration de la fonction de tenseur : ")
-print(integration)
-print(newNTF.name)
-
-newNTF=(NTF*6)
-integration=FieldIntegrator.integrate(newNTF, Sup)
-print("Integration de la fonction de tenseur : ")
-print(integration)
-print(newNTF.name)
-
-print("-----------------")
-
-print(dir(Sup.fem.getMesh))
+'''print(dir(Sup.fem.getShapesDerivatives(Sup.elem_type)))
+print(Sup.fem.getShapesDerivatives(Sup.elem_type))
+'''
