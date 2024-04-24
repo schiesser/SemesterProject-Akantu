@@ -175,15 +175,22 @@ class Contraction(Operator):
 class ShapeField(TensorField):
     def __init__(self, support):
         super().__init__("shape_function", support)
-        self.value_integration_points = None
-        
+        #attention 1D
+        self.conn = support.fem.getMesh().getConnectivities()(support.elem_type)
+        self.nb_elem = self.conn.shape[1] # plus tard : nbr quadrature points !
+        nb_nodes = self.support.fem.getMesh().getNbNodes() # plus tard encore à mulitpliter par dimension !
+        self.value_integration_points = np.zeros((self.nb_elem, nb_nodes))
+
     def getFieldDimension(self):
-        return 2
+        return 3 #nbr de noeud * dimension (selon la sortie voulue !)
     
     def evalOnQuadraturePoints(self):
-        shapes_function = self.support.fem.getShapes(self.support.elem_type)
-        #à modifier
-        self.value_integration_points = self.support.fem.getShapes(self.support.elem_type)
+
+        shapes_derivatives = self.support.fem.getShapes(self.support.elem_type)
+
+        for i in range(self.nb_elem):
+            self.value_integration_points[i,self.conn[i,:]]=shapes_derivatives[i,:]
+
 
 
 
@@ -194,11 +201,16 @@ class GradientOperator(Operator):
         self.name = "Gradient(" + f1.name + ")"
 
     def evalOnQuadraturePoints(self):
-        shapes_derivatives = self.support.fem.getShapesDerivatives(
-            self.support.elem_type)
-        #à modifier
 
-        self.value_integration_points = shapes_derivatives
+        if isinstance(self.first, ShapeField):
+
+            self.value_integration_points = self.support.fem.getShapesDerivatives(
+            self.support.elem_type)
+
+        '''
+        elif isinstance(self.first, ):
+            
+            raise NotImplementedError'''
 
 
 class FieldIntegrator:
@@ -222,3 +234,4 @@ class FieldIntegrator:
         #integration = result_integration
 
         return integration
+    
