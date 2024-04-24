@@ -169,6 +169,7 @@ class Contraction(Operator):
         #check dimension ?
 
     def evalOnQuadraturePoints(self):
+        #res_contraction = np.einsum('qi,qj->qij', Ngrouped, Ngrouped)
         raise NotImplementedError
 
 
@@ -203,7 +204,7 @@ class GradientOperator(Operator):
     def evalOnQuadraturePoints(self):
 
         if isinstance(self.first, ShapeField):
-
+            # attention dimension !
             self.value_integration_points = self.support.fem.getShapesDerivatives(
             self.support.elem_type)
 
