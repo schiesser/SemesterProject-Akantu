@@ -52,15 +52,43 @@ fem = model.getFEEngine()
 elem_type = aka._triangle_3
 ghost_type = aka.GhostType(1) #peu importe pour le moment
 Sup = Support(elem_filter, fem, spatial_dimension, elem_type, ghost_type)
-##########################
-Ngroup = ShapeField(Sup)
-resNgroup = Ngroup.evalOnQuadraturePoints()
-print("N grouped :")
-print(resNgroup)
-'''Bgroup = GradientOperator(Ngroup)
-resBgroup = Bgroup.evalOnQuadraturePoints()
-print("B grouped :")
-print(resBgroup)
-intN = FieldIntegrator.integrate(Ngroup)
-print("N integration :")
-print(intN)'''
+
+## Interpolation
+
+# create a field  
+nodes = mesh.getNodes()
+
+## Cas d'un champ scalaire :
+nodal_vector=np.ones((nodes.shape[0],nodes.shape[1]-1))*3
+nodal_vector[0,0]=2 #première coordonnée : numérotation du noeud; deuxième coordonnée : selon dimensions (ici 1D)
+nodal_vector[2,0]=1
+
+'''
+## Cas d'un champ vectoriel :
+nodal_vector=np.ones(nodes.shape)*3
+nodal_vector[0,0]=2 #première coordonnée : numérotation du noeud; deuxième coordonnée : selon dimensions (ici champ 2D)
+nodal_vector[2,1]=1
+'''
+'''
+print("nodal_field testé :")
+print(nodal_field)
+print("avec les connections :")
+print(conn)
+'''
+
+NTF = NodalTensorField("ex_displacement", Sup, nodal_vector)
+v = NTF.evalOnQuadraturePoints()
+print("valeurs aux points de quadrature du support")
+print(v)
+
+# Integrate
+
+print("Integration depl : ")
+integration_depl=FieldIntegrator.integrate(NTF)
+print(integration_depl)
+
+# test integration with multiplication/addition/substraction
+newNTF=(2 - NTF*2 + 1)
+integration=FieldIntegrator.integrate(newNTF)
+print("Integration de la fonction de tenseur : ")
+print(integration)
