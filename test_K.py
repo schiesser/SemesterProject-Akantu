@@ -36,11 +36,6 @@ elem_type = aka._segment_2
 ghost_type = aka.GhostType(1) #peu importe pour le moment
 Sup = Support(elem_filter, fem, spatial_dimension, elem_type, ghost_type)
 
-# Interpolation
-
-## create a field  
-nodes = mesh.getNodes()
-
 Ngroup = ShapeField(Sup)
 resNgroup = Ngroup.evalOnQuadraturePoints()
 print("N grouped :")

@@ -207,11 +207,11 @@ class Contraction(Operator):
 class ShapeField(TensorField): #testé pour 1D et 2D mais avec un seul point de quad par élem
     def __init__(self, support):
         super().__init__("shape_function", support)
-        
+        self.NbIntegrationPoints=support.fem.getNbIntegrationPoints(support.elem_type)
         self.conn = support.fem.getMesh().getConnectivities()(support.elem_type)
         self.nb_elem = self.conn.shape[0]
         self.nb_nodes = self.support.fem.getMesh().getNbNodes()
-        self.value_integration_points = np.zeros((self.nb_elem*support.spatial_dimension, self.nb_nodes*support.spatial_dimension))
+        self.value_integration_points = np.zeros((self.nb_elem*support.spatial_dimension*self.NbIntegrationPoints, self.nb_nodes*support.spatial_dimension))
 
     def getFieldDimension(self):
         return self.value_integration_points.shape[1]
@@ -219,9 +219,10 @@ class ShapeField(TensorField): #testé pour 1D et 2D mais avec un seul point de 
     def evalOnQuadraturePoints(self):
         
         shapes = self.support.fem.getShapes(self.support.elem_type)
-    
+
+        self.conn = np.repeat(self.conn, self.NbIntegrationPoints, axis=0)
         if self.support.spatial_dimension == 1:
-            for i in range(self.nb_elem):
+            for i in range(self.nb_elem*self.NbIntegrationPoints):
                 self.value_integration_points[i,self.conn[i,:]]=shapes[i,:]
 
         elif self.support.spatial_dimension == 2:
@@ -242,26 +243,28 @@ class GradientOperator(Operator):
             self.conn = self.support.fem.getMesh().getConnectivities()(self.support.elem_type)
             self.nb_elem = self.conn.shape[0]
             self.nb_nodes = self.support.fem.getMesh().getNbNodes()
+            self.NbIntegrationPoints=self.support.fem.getNbIntegrationPoints(self.support.elem_type)
             
             if f1.support.spatial_dimension ==1:
                 self.line_per_B_local = 1
             elif f1.support.spatial_dimension == 2 :
                 self.line_per_B_local = 3 #Voigt actuellement; plus tard 4 ?
 
-            self.value_integration_points = np.zeros((self.nb_elem*self.line_per_B_local, self.nb_nodes * self.support.spatial_dimension))
+            self.value_integration_points = np.zeros((self.nb_elem*self.line_per_B_local*self.NbIntegrationPoints, self.nb_nodes * self.support.spatial_dimension))
 
     def evalOnQuadraturePoints(self):
 
         if isinstance(self.first, ShapeField):
-
+            
+            self.conn = np.repeat(self.conn, self.NbIntegrationPoints, axis=0)
             shapes_derivatives = self.support.fem.getShapesDerivatives(self.support.elem_type)
-    
+
             if self.support.spatial_dimension == 1:
-                for i in range(self.nb_elem):
+                for i in range(self.nb_elem*self.NbIntegrationPoints):
                     self.value_integration_points[i,self.conn[i,:]]=shapes_derivatives[i,:]
 
             elif self.support.spatial_dimension == 2:
-                for i in range(self.nb_elem):
+                for i in range(self.nb_elem*self.NbIntegrationPoints):
                     self.value_integration_points[self.line_per_B_local*i,self.conn[i,:]*self.support.spatial_dimension]=shapes_derivatives[i,::self.support.spatial_dimension]
                     self.value_integration_points[self.line_per_B_local*i+1,self.conn[i,:]*self.support.spatial_dimension+1]=shapes_derivatives[i,1::self.support.spatial_dimension]
                     self.value_integration_points[self.line_per_B_local*i+2,self.conn[i,:]*self.support.spatial_dimension+1]=shapes_derivatives[i,::self.support.spatial_dimension]
@@ -287,6 +290,7 @@ class FieldIntegrator:
         nb_element = mesh.getConnectivity(support.elem_type).shape[0]
 
         nb_integration_points = support.fem.getNbIntegrationPoints(support.elem_type)
+        print(nb_element*nb_integration_points)
         result_integration = np.zeros((nb_element*nb_integration_points, field_dim ))
         
         support.fem.integrate(value_integration_points,result_integration,field_dim, support.elem_type)
