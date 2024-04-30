@@ -290,7 +290,6 @@ class FieldIntegrator:
         nb_element = mesh.getConnectivity(support.elem_type).shape[0]
 
         nb_integration_points = support.fem.getNbIntegrationPoints(support.elem_type)
-        print(nb_element*nb_integration_points)
         result_integration = np.zeros((nb_element*nb_integration_points, field_dim ))
         
         support.fem.integrate(value_integration_points,result_integration,field_dim, support.elem_type)
