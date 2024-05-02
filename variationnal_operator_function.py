@@ -204,7 +204,7 @@ class Contraction(Operator):
         return self.value_integration_points
     
 
-class ShapeField(TensorField): #testé pour 1D et 2D mais avec un seul point de quad par élem
+class ShapeField(TensorField):
     def __init__(self, support):
         super().__init__("shape_function", support)
         self.NbIntegrationPoints=support.fem.getNbIntegrationPoints(support.elem_type)
@@ -213,29 +213,19 @@ class ShapeField(TensorField): #testé pour 1D et 2D mais avec un seul point de 
         self.nb_nodes_per_elem = self.conn.shape[1]
         self.nb_nodes = self.support.fem.getMesh().getNbNodes()
         self.value_integration_points = np.zeros((self.nb_elem, self.NbIntegrationPoints, support.spatial_dimension, self.nb_nodes_per_elem * support.spatial_dimension))
-
+    
     def getFieldDimension(self):
         return self.value_integration_points.shape[1]
     
     def evalOnQuadraturePoints(self):
-        
+
+        value_integration_points_without_dim_extension = np.zeros((self.nb_elem, self.NbIntegrationPoints,1, self.nb_nodes_per_elem))
         shapes = self.support.fem.getShapes(self.support.elem_type)
-        shapes = shapes.reshape((self.value_integration_points.shape))
-        self.conn = np.repeat(self.conn, self.NbIntegrationPoints, axis=0)
-
-        for i in range(self.nb_elem): 
-            self.value_integration_points[i,:,:,:]=shapes[i,:,:,:]
+        shapes = shapes.reshape((value_integration_points_without_dim_extension.shape))
         
-        """
-        if self.support.spatial_dimension == 1:
-            for i in range(self.nb_elem*self.NbIntegrationPoints):
-                self.value_integration_points[i,self.conn[i,:]]=shapes[i,:]
+        for i in range(self.support.spatial_dimension):
+            self.value_integration_points[:,:,i::self.support.spatial_dimension,i::self.support.spatial_dimension]=shapes
 
-        elif self.support.spatial_dimension == 2:
-            for i in range(self.nb_elem):
-                self.value_integration_points[self.support.spatial_dimension*i,self.conn[i,:]*self.support.spatial_dimension]=shapes[i,:]
-                self.value_integration_points[self.support.spatial_dimension*i+1,self.conn[i,:]*self.support.spatial_dimension+1]=shapes[i,:]
-        """
         return self.value_integration_points
     
 
