@@ -215,7 +215,7 @@ class ShapeField(TensorField):
         self.value_integration_points = np.zeros((self.nb_elem, self.NbIntegrationPoints, support.spatial_dimension, self.nb_nodes_per_elem * support.spatial_dimension))
     
     def getFieldDimension(self):
-        return self.value_integration_points.shape[1]
+        return self.value_integration_points.shape[-1]
     
     def evalOnQuadraturePoints(self):
 
@@ -226,7 +226,10 @@ class ShapeField(TensorField):
         for i in range(self.support.spatial_dimension):
             self.value_integration_points[:,:,i::self.support.spatial_dimension,i::self.support.spatial_dimension]=shapes
 
-        return self.value_integration_points
+        temp = shapes.reshape((self.nb_elem,self.NbIntegrationPoints*self.nb_nodes_per_elem))
+        #temp = self.value_integration_points.reshape((self.nb_elem,self.NbIntegrationPoints* self.support.spatial_dimension* self.nb_nodes_per_elem * self.support.spatial_dimension))
+        
+        return temp
     
 
 class GradientOperator(Operator):
@@ -289,11 +292,29 @@ class FieldIntegrator:
         result_integration = np.zeros((nb_element*nb_integration_points, field_dim ))
         
         support.fem.integrate(value_integration_points,result_integration,field_dim, support.elem_type)
-        #print("result_integration")
-        #print(result_integration)
-        #print(result_integration.shape)
         integration=np.sum(result_integration,axis=0)
-        #integration = result_integration
 
         return integration
     
+class FieldIntegrator2:
+    @staticmethod
+    def integrate(field):
+        
+        support=field.support
+        
+        value_integration_points=field.evalOnQuadraturePoints()
+
+        field_dim= field.getFieldDimension()
+        mesh=support.fem.getMesh()
+        nb_element = mesh.getConnectivity(support.elem_type).shape[0]
+
+        nb_integration_points = support.fem.getNbIntegrationPoints(support.elem_type)
+        result_integration = np.zeros((nb_element, field.nb_nodes_per_elem))
+        
+        support.fem.integrate(value_integration_points,result_integration,field_dim, support.elem_type)
+        #print("result_integration")
+        #print(result_integration)
+        #print(result_integration.shape)
+        integration = result_integration
+
+        return integration
