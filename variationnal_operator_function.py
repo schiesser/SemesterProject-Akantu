@@ -212,6 +212,7 @@ class ShapeField(TensorField):
         self.nb_elem = self.conn.shape[0]
         self.nb_nodes_per_elem = self.conn.shape[1]
         self.nb_nodes = self.support.fem.getMesh().getNbNodes()
+
         self.value_integration_points = np.zeros((self.nb_elem, self.NbIntegrationPoints, support.spatial_dimension, self.nb_nodes_per_elem * support.spatial_dimension))
     
     def getFieldDimension(self):
@@ -227,13 +228,11 @@ class ShapeField(TensorField):
             self.value_integration_points[:,:,i::self.support.spatial_dimension,i::self.support.spatial_dimension]=shapes
 
         temp = shapes.reshape((self.nb_elem,self.NbIntegrationPoints*self.nb_nodes_per_elem))
-        #temp = self.value_integration_points.reshape((self.nb_elem,self.NbIntegrationPoints* self.support.spatial_dimension* self.nb_nodes_per_elem * self.support.spatial_dimension))
         
         return temp
     
 
 class GradientOperator(Operator):
-    #pour le moment Bgroup et selon notation de voigt (change rien pour K mais à chnger par la suite ! )
     def __init__(self, f1):
         super().__init__(f1)
         self.name = "Gradient(" + f1.name + ")"
@@ -243,38 +242,27 @@ class GradientOperator(Operator):
             self.nb_elem = self.conn.shape[0]
             self.nb_nodes = self.support.fem.getMesh().getNbNodes()
             self.NbIntegrationPoints=self.support.fem.getNbIntegrationPoints(self.support.elem_type)
-            
-            if f1.support.spatial_dimension ==1:
-                self.line_per_B_local = 1
-            elif f1.support.spatial_dimension == 2 :
-                self.line_per_B_local = 3 #Voigt actuellement; plus tard 4 ?
+            self.nb_nodes_per_elem = self.conn.shape[1]
 
-            self.value_integration_points = np.zeros((self.nb_elem*self.line_per_B_local*self.NbIntegrationPoints, self.nb_nodes * self.support.spatial_dimension))
+            self.value_integration_points = np.zeros((self.nb_elem, self.NbIntegrationPoints, self.support.spatial_dimension, self.nb_nodes_per_elem * self.support.spatial_dimension))
 
+    def getFieldDimension(self):
+        test = self.nb_nodes_per_elem * self.support.spatial_dimension * self.support.spatial_dimension
+        return test
+    
     def evalOnQuadraturePoints(self):
 
         if isinstance(self.first, ShapeField):
             
-            self.conn = np.repeat(self.conn, self.NbIntegrationPoints, axis=0)
-            shapes_derivatives = self.support.fem.getShapesDerivatives(self.support.elem_type)
-
-            if self.support.spatial_dimension == 1:
-                for i in range(self.nb_elem*self.NbIntegrationPoints):
-                    self.value_integration_points[i,self.conn[i,:]]=shapes_derivatives[i,:]
-
-            elif self.support.spatial_dimension == 2:
-                for i in range(self.nb_elem*self.NbIntegrationPoints):
-                    self.value_integration_points[self.line_per_B_local*i,self.conn[i,:]*self.support.spatial_dimension]=shapes_derivatives[i,::self.support.spatial_dimension]
-                    self.value_integration_points[self.line_per_B_local*i+1,self.conn[i,:]*self.support.spatial_dimension+1]=shapes_derivatives[i,1::self.support.spatial_dimension]
-                    self.value_integration_points[self.line_per_B_local*i+2,self.conn[i,:]*self.support.spatial_dimension+1]=shapes_derivatives[i,::self.support.spatial_dimension]
-                    self.value_integration_points[self.line_per_B_local*i+2,self.conn[i,:]*self.support.spatial_dimension]=shapes_derivatives[i,1::self.support.spatial_dimension]
-        '''
-        elif isinstance(self.first, ):
+            value_integration_points_without_dim_extension = np.zeros((self.nb_elem, self.NbIntegrationPoints,1, self.nb_nodes_per_elem* self.support.spatial_dimension))
+            shapes = self.support.fem.getShapesDerivatives(self.support.elem_type)
+            print("shapes shape :")
+            print(shapes.shape)
+            shapes = shapes.reshape((value_integration_points_without_dim_extension.shape))
+            temp = shapes.reshape((self.nb_elem,self.NbIntegrationPoints*self.nb_nodes_per_elem* self.support.spatial_dimension))
             
-            raise NotImplementedError'''
+        return temp
 
-        return self.value_integration_points
-    
 
 class FieldIntegrator:
     @staticmethod
@@ -308,13 +296,31 @@ class FieldIntegrator2:
         mesh=support.fem.getMesh()
         nb_element = mesh.getConnectivity(support.elem_type).shape[0]
 
-        nb_integration_points = support.fem.getNbIntegrationPoints(support.elem_type)
         result_integration = np.zeros((nb_element, field.nb_nodes_per_elem))
         
         support.fem.integrate(value_integration_points,result_integration,field_dim, support.elem_type)
-        #print("result_integration")
-        #print(result_integration)
-        #print(result_integration.shape)
         integration = result_integration
 
         return integration
+    
+    def assembly(field, result_integration):
+
+        if isinstance(field, ShapeField):
+                conn = field.conn
+                nb_elem = field.nb_elem
+                nb_nodes = np.max(conn)+1 #+1 car noeud 0
+                assembled_result = np.zeros((nb_nodes))
+                for i in range(nb_elem):
+                    assembled_result[conn[i,:]]+=result_integration[i,:]
+
+        elif isinstance(field, GradientOperator):
+                conn = field.conn
+                nb_elem = field.nb_elem
+                nb_nodes = np.max(conn)+1 #+1 car noeud 0
+                assembled_result = np.zeros((nb_nodes))
+                for i in range(nb_elem):
+                    assembled_result[conn[i,:]]+=result_integration[i,:]
+
+        return assembled_result
+    
+    
