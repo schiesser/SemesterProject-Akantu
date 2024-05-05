@@ -319,6 +319,8 @@ class FieldIntegrator:
         return integration
     
 class FieldIntegrator2:
+    #provisoirement un deuxième classe d'intégration
+    # une fois que les tests sont passés, je regrouperai
     @staticmethod
     def integrate(field):
         
@@ -341,13 +343,52 @@ class FieldIntegrator2:
 
         return integration
     
-class AssemblyArray:
+class Assembly:
     @staticmethod
-    def assembly(integration_result, outputdim1, outputdim2, field_dim, conn):
+    def assemblyK(conn, groupedKlocal, dim1, dim2, field_dim):
+        # pour matrice de rigidité globale
+        n_elem  = conn.shape[0]
+        n_nodes_per_elem = conn.shape[1]
+        numEq = np.zeros((n_elem, field_dim*n_nodes_per_elem), dtype=int)
         
-        assembled_array = np.zeros((outputdim1, outputdim2))
+        for e in range(n_elem):
+            for i in range(n_nodes_per_elem):
+                    for j in range(field_dim):
+                        numEq[e, field_dim*i+j] = field_dim*conn[e, i]+j
 
-        for i in range(integration_result.shape[0]):
-            assembled_array[conn,conn]=integration_result[i,0,:,:]
+        K = np.zeros((dim1, dim2))
+
+        for e in range(n_elem):
+
+            ddl = numEq[e, :]
+
+            K_locale = groupedKlocal
+
+            for i, gi in enumerate(ddl):
+                for j, gj in enumerate(ddl):
+                    K[gi, gj] += K_locale[e,0,i, j]
+        return K
+
+    def assemblyV(conn, groupedV, dim2, field_dim):
+        #pour integration de N ou B
+        n_elem  = conn.shape[0]
+        n_nodes_per_elem = conn.shape[1]
+        numEq = np.zeros((n_elem, field_dim*n_nodes_per_elem), dtype=int)
         
-        raise NotImplementedError
+        for e in range(n_elem):
+            for i in range(n_nodes_per_elem):
+                    for j in range(field_dim):
+                        numEq[e, field_dim*i+j] = field_dim*conn[e, i]+j
+
+        V = np.zeros((field_dim, dim2))
+
+        for e in range(n_elem):
+
+            ddl = numEq[e, :]
+
+            V_locale = groupedV
+
+            for i, gi in enumerate(ddl):
+                    V[:, gi] += V_locale[e,0,:,i]
+
+        return V
