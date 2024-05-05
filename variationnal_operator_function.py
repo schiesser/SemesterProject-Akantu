@@ -14,6 +14,7 @@ class TensorField:
     def __init__(self, name, support):
         self.name = name
         self.support = support
+        self.value_integration_points = None
 
     def evalOnQuadraturePoints(self):
         pass
@@ -21,8 +22,8 @@ class TensorField:
     def getFieldDimension(self):
         pass
 
-    def transpose(self):
-        raise NotImplementedError
+    def getDimensionForIntegration(self):
+        return np.prod(self.value_integration_points.shape[1:])
 
     def __mul__(self, f):
         return Multiplication(self, f)
@@ -59,11 +60,8 @@ class Operator(TensorField):
         elif len(args) == 1:
             self.first = args[0]
             self.second = None
-            
-        self.support = self.first.support
 
-    def getFieldDimension(self):
-        return self.value_integration_points.shape[1] #ok si utilisé après un "evalOnQua..."
+        self.support = self.first.support
 
 
 class Addition(Operator):
@@ -81,17 +79,34 @@ class Addition(Operator):
     
     def evalOnQuadraturePoints(self):
 
-        self.first.evalOnQuadraturePoints()
+        firstevaluated = self.first.evalOnQuadraturePoints()
 
         if isinstance(self.second, (int, float)):
-            self.value_integration_points = self.first.value_integration_points + self.second
+            self.value_integration_points = firstevaluated + self.second
         
         elif isinstance(self.second, TensorField):
-            self.second.evalOnQuadraturePoints()
-            self.value_integration_points = self.first.value_integration_points + self.second.value_integration_points
+            secondevaluated = self.second.evalOnQuadraturePoints()
+            self.value_integration_points = firstevaluated + secondevaluated
         
         return self.value_integration_points
 
+class transpose(Operator):
+    # valide pour des array d'ordre 4 (nb_elem, nb_points_integration, dim1, dim2)
+    # transpose dim1 et dim2
+    # à généraliser par la suite selon besoins
+    def __init__(self,f):
+
+        super().__init__(f)
+        self.name = "transpose"+"("+self.first.name+")"
+        self.value_integration_points = np.zeros((f.value_integration_points.shape[0],f.value_integration_points.shape[1],f.value_integration_points.shape[3],f.value_integration_points.shape[2]))
+    
+    def evalOnQuadraturePoints(self):
+
+        firstevaluated = self.first.evalOnQuadraturePoints()
+
+        self.value_integration_points = np.transpose(firstevaluated, axes=(0,1,3,2))
+        
+        return self.value_integration_points
 
 class Substraction(Operator):
 
@@ -108,14 +123,14 @@ class Substraction(Operator):
 
     def evalOnQuadraturePoints(self):
 
-        self.first.evalOnQuadraturePoints()
+        firstevaluated = self.first.evalOnQuadraturePoints()
 
         if isinstance(self.second, (int, float)):
-            self.value_integration_points = self.first.value_integration_points - self.second
+            self.value_integration_points = firstevaluated - self.second
         
         elif isinstance(self.second, TensorField):
-            self.second.evalOnQuadraturePoints()
-            self.value_integration_points = self.first.value_integration_points - self.second.value_integration_points
+            secondevaluated = self.second.evalOnQuadraturePoints()
+            self.value_integration_points = firstevaluated - secondevaluated
 
         return self.value_integration_points
     
@@ -135,14 +150,14 @@ class Multiplication(Operator):
 
     def evalOnQuadraturePoints(self):
 
-        self.first.evalOnQuadraturePoints()
+        firstevaluated = self.first.evalOnQuadraturePoints()
 
         if isinstance(self.second, (int, float)):
-            self.value_integration_points = self.first.value_integration_points * self.second
+            self.value_integration_points = firstevaluated * self.second
         
         elif isinstance(self.second, TensorField):
-            self.second.evalOnQuadraturePoints()
-            self.value_integration_points = self.first.value_integration_points * self.second.value_integration_points
+            secondevaluated = self.second.evalOnQuadraturePoints()
+            self.value_integration_points = firstevaluated * secondevaluated
         
         return self.value_integration_points
     
@@ -151,55 +166,48 @@ class NodalTensorField(TensorField):
     def __init__(self, name, support, nodal_field):
         super().__init__(name, support)
         self.nodal_field = nodal_field
-        self.value_integration_points = None
         
-    def getFieldDimension(self):
-        return self.nodal_field.shape[1]
-
-    def evalOnQuadraturePoints(self):
         nb_integration_points = self.support.fem.getNbIntegrationPoints(self.support.elem_type)
         mesh = self.support.fem.getMesh()
         nb_element = mesh.getConnectivity(self.support.elem_type).shape[0]
-
         self.value_integration_points = np.zeros((nb_integration_points*nb_element,self.nodal_field.shape[1])) #dimension : nbr quad point x field dimension
 
-        self.support.fem.interpolateOnIntegrationPoints(
-        self.nodal_field, self.value_integration_points, self.value_integration_points.shape[1], self.support.elem_type)
+    def getFieldDimension(self):
+        return self.nodal_field.shape[1]
+
+    def getDimensionForIntegration(self):
+        return self.nodal_field.shape[1]
+    
+    def evalOnQuadraturePoints(self):
+        self.support.fem.interpolateOnIntegrationPoints(self.nodal_field, self.value_integration_points, self.value_integration_points.shape[1], self.support.elem_type)
         
         return self.value_integration_points
     
-
-class IntegrationPointTensorField(TensorField):
-    def evalOnQuadraturePoints(self):
-        raise NotImplementedError
-
 
 class Contraction(Operator):
     #A modifier
     def __init__(self, f1, f2):
         super().__init__(f1, f2)
         
-        #check dimension !; provisoirement :
-        self.conn = self.support.fem.getMesh().getConnectivities()(self.support.elem_type)
-        self.nb_elem = self.conn.shape[0]
-        '''
-        nb_nodes = self.support.fem.getMesh().getNbNodes() # plus tard encore à mulitpliter par dimension !
-        self.value_integration_points = np.zeros((self.nb_elem, nb_nodes, nb_nodes))
-        '''
-
+        #Ajouter exceptions de contrôle de dimensions !
+        self.value_integration_points = np.zeros(f1.value_integration_points.shape)
+    
     def evalOnQuadraturePoints(self):
-        self.first.evalOnQuadraturePoints()
-        self.second.evalOnQuadraturePoints()
 
-        a = self.first.value_integration_points
-        b = self.second.value_integration_points
+        firstevaluated = self.first.evalOnQuadraturePoints()
+        secondevaluated = self.second.evalOnQuadraturePoints()
+        
+        self.value_integration_points = np.matmul(firstevaluated,secondevaluated)
 
+        """tests avec utilisation einsum :
+        print("shape de a :")
+        print(a.shape)
+        print("shape de b :")
+        print(b.shape)
+        res_contraction = np.einsum('ijkl,jlmn->ikmn', a, b)
         res_contraction = np.einsum('qi,qj->qij', a, b) # à géneraliser selon la dimension
         self.value_integration_points = res_contraction
-        
-        nb_nodes = self.support.fem.getMesh().getNbNodes()
-        spatial_dimension = self.support.fem.getMesh().getSpatialDimension(self.support.elem_type)
-        self.value_integration_points = res_contraction.reshape(self.nb_elem, spatial_dimension*spatial_dimension*nb_nodes*nb_nodes) #encore à modifier selon quadrature point ?
+        """
 
         return self.value_integration_points
     
@@ -211,26 +219,33 @@ class ShapeField(TensorField):
         self.conn = support.fem.getMesh().getConnectivities()(support.elem_type)
         self.nb_elem = self.conn.shape[0]
         self.nb_nodes_per_elem = self.conn.shape[1]
-        self.nb_nodes = self.support.fem.getMesh().getNbNodes()
 
-        self.value_integration_points = np.zeros((self.nb_elem, self.NbIntegrationPoints, support.spatial_dimension, self.nb_nodes_per_elem * support.spatial_dimension))
-    
-    def getFieldDimension(self):
-        return self.value_integration_points.shape[-1]
+        self.value_integration_points = np.zeros((self.nb_elem * self.NbIntegrationPoints, self.nb_nodes_per_elem))
     
     def evalOnQuadraturePoints(self):
 
-        value_integration_points_without_dim_extension = np.zeros((self.nb_elem, self.NbIntegrationPoints,1, self.nb_nodes_per_elem))
-        shapes = self.support.fem.getShapes(self.support.elem_type)
-        shapes = shapes.reshape((value_integration_points_without_dim_extension.shape))
+        self.value_integration_points = self.support.fem.getShapes(self.support.elem_type)
         
-        for i in range(self.support.spatial_dimension):
-            self.value_integration_points[:,:,i::self.support.spatial_dimension,i::self.support.spatial_dimension]=shapes
+        return self.value_integration_points
 
-        temp = shapes.reshape((self.nb_elem,self.NbIntegrationPoints*self.nb_nodes_per_elem))
-        
-        return temp
+class N(ShapeField):
+    def __init__(self, support, dim_field):
+        super().__init__(support)
+        self.dim_field = dim_field
+        # array qui contient tous les N est de dimension :
+        # (nombre éléments, nombre points Gauss, dimension du champ, noeuds par élément x dimension du champ)
+        self.value_integration_points = np.zeros((self.nb_elem, self.NbIntegrationPoints, self.dim_field, self.nb_nodes_per_elem * self.dim_field))
     
+    def evalOnQuadraturePoints(self):
+
+        N_without_dim_extension = np.zeros((self.nb_elem, self.NbIntegrationPoints,1, self.nb_nodes_per_elem))
+        shapes = self.support.fem.getShapes(self.support.elem_type)
+        shapes = shapes.reshape((N_without_dim_extension.shape))
+        
+        for i in range(self.dim_field):
+            self.value_integration_points[:,:,i::self.dim_field,i::self.dim_field]=shapes
+        
+        return self.value_integration_points
 
 class GradientOperator(Operator):
     def __init__(self, f1):
@@ -238,48 +253,67 @@ class GradientOperator(Operator):
         self.name = "Gradient(" + f1.name + ")"
 
         if isinstance(self.first, ShapeField):
-            self.conn = self.support.fem.getMesh().getConnectivities()(self.support.elem_type)
+            self.conn = self.first.conn
             self.nb_elem = self.conn.shape[0]
-            self.nb_nodes = self.support.fem.getMesh().getNbNodes()
-            self.NbIntegrationPoints=self.support.fem.getNbIntegrationPoints(self.support.elem_type)
+            self.NbIntegrationPoints=self.first.NbIntegrationPoints
             self.nb_nodes_per_elem = self.conn.shape[1]
+            self.dim_field = self.first.dim_field
 
-            self.value_integration_points = np.zeros((self.nb_elem, self.NbIntegrationPoints, self.support.spatial_dimension, self.nb_nodes_per_elem * self.support.spatial_dimension))
+            if self.support.spatial_dimension == 1 :
+                self.nb_line = 1
 
-    def getFieldDimension(self):
-        test = self.nb_nodes_per_elem * self.support.spatial_dimension * self.support.spatial_dimension
-        return test
-    
+            elif self.support.spatial_dimension == 2 :
+                self.nb_line = 3
+
+            self.value_integration_points = np.zeros((self.nb_elem, self.NbIntegrationPoints, self.nb_line, self.nb_nodes_per_elem * self.dim_field))
+
     def evalOnQuadraturePoints(self):
 
         if isinstance(self.first, ShapeField):
-            
-            value_integration_points_without_dim_extension = np.zeros((self.nb_elem, self.NbIntegrationPoints,1, self.nb_nodes_per_elem* self.support.spatial_dimension))
-            shapes = self.support.fem.getShapesDerivatives(self.support.elem_type)
-            print("shapes shape :")
-            print(shapes.shape)
-            shapes = shapes.reshape((value_integration_points_without_dim_extension.shape))
-            temp = shapes.reshape((self.nb_elem,self.NbIntegrationPoints*self.nb_nodes_per_elem* self.support.spatial_dimension))
-            
-        return temp
+
+            B_without_dim_extension = np.zeros((self.nb_elem, self.NbIntegrationPoints,1, self.nb_nodes_per_elem*self.support.spatial_dimension))
+            derivatives_shapes = self.support.fem.getShapesDerivatives(self.support.elem_type)
+            derivatives_shapes = derivatives_shapes.reshape((B_without_dim_extension.shape))
+
+            if self.support.spatial_dimension == 1:
+                for i in range(self.dim_field):
+                    self.value_integration_points[:,:,:,i::self.dim_field]=derivatives_shapes
+
+            elif self.support.spatial_dimension == 2:
+                for i in range(self.nb_elem):
+                    for j in range(self.dim_field):
+                        if self.dim_field == 1:
+                            self.value_integration_points[i,:,0,0::self.dim_field]=derivatives_shapes[i,:,0,:self.nb_nodes_per_elem]
+                            self.value_integration_points[i,:,1,0::self.dim_field]=derivatives_shapes[i,:,0,self.nb_nodes_per_elem:]
+                            self.value_integration_points[i,:,2,0::self.dim_field]+=derivatives_shapes[i,:,0,:self.nb_nodes_per_elem]
+                            self.value_integration_points[i,:,2,0::self.dim_field]+=derivatives_shapes[i,:,0,self.nb_nodes_per_elem:]
+                        
+                        if self.dim_field == 2:
+                            self.value_integration_points[i,:,0,0::self.dim_field]=derivatives_shapes[i,:,0,:self.nb_nodes_per_elem]
+                            self.value_integration_points[i,:,1,1::self.dim_field]=derivatives_shapes[i,:,0,self.nb_nodes_per_elem:]
+                            self.value_integration_points[i,:,2,1::self.dim_field]=derivatives_shapes[i,:,0,:self.nb_nodes_per_elem]
+                            self.value_integration_points[i,:,2,0::self.dim_field]=derivatives_shapes[i,:,0,self.nb_nodes_per_elem:]
+        
+        return self.value_integration_points
 
 
 class FieldIntegrator:
     @staticmethod
+    # Valide pour des cas où on veut intégrer un array de dimension 2 (par exemple les NodalTensorField)
     def integrate(field):
         
-        support=field.support
+        support = field.support
         
         value_integration_points=field.evalOnQuadraturePoints()
 
-        field_dim= field.getFieldDimension()
+        int_dim = field.getDimensionForIntegration()
         mesh=support.fem.getMesh()
         nb_element = mesh.getConnectivity(support.elem_type).shape[0]
-
         nb_integration_points = support.fem.getNbIntegrationPoints(support.elem_type)
-        result_integration = np.zeros((nb_element*nb_integration_points, field_dim ))
+
+        result_integration = np.zeros((nb_element*nb_integration_points, int_dim ))
         
-        support.fem.integrate(value_integration_points,result_integration,field_dim, support.elem_type)
+        support.fem.integrate(value_integration_points,result_integration,int_dim, support.elem_type)
         integration=np.sum(result_integration,axis=0)
 
         return integration
@@ -291,36 +325,29 @@ class FieldIntegrator2:
         support=field.support
         
         value_integration_points=field.evalOnQuadraturePoints()
+        shape_output = value_integration_points.shape
 
-        field_dim= field.getFieldDimension()
+
         mesh=support.fem.getMesh()
         nb_element = mesh.getConnectivity(support.elem_type).shape[0]
-
-        result_integration = np.zeros((nb_element, field.nb_nodes_per_elem))
         
-        support.fem.integrate(value_integration_points,result_integration,field_dim, support.elem_type)
-        integration = result_integration
+        value_integration_points = value_integration_points.reshape((nb_element,-1))
+        int_dim = field.getDimensionForIntegration()
+        
+        result_integration = np.zeros((nb_element, int_dim))
+
+        support.fem.integrate(value_integration_points,result_integration,int_dim, support.elem_type)
+        integration = result_integration.reshape(shape_output)
 
         return integration
     
-    def assembly(field, result_integration):
+class AssemblyArray:
+    @staticmethod
+    def assembly(integration_result, outputdim1, outputdim2, field_dim, conn):
+        
+        assembled_array = np.zeros((outputdim1, outputdim2))
 
-        if isinstance(field, ShapeField):
-                conn = field.conn
-                nb_elem = field.nb_elem
-                nb_nodes = np.max(conn)+1 #+1 car noeud 0
-                assembled_result = np.zeros((nb_nodes))
-                for i in range(nb_elem):
-                    assembled_result[conn[i,:]]+=result_integration[i,:]
-
-        elif isinstance(field, GradientOperator):
-                conn = field.conn
-                nb_elem = field.nb_elem
-                nb_nodes = np.max(conn)+1 #+1 car noeud 0
-                assembled_result = np.zeros((nb_nodes))
-                for i in range(nb_elem):
-                    assembled_result[conn[i,:]]+=result_integration[i,:]
-
-        return assembled_result
-    
-    
+        for i in range(integration_result.shape[0]):
+            assembled_array[conn,conn]=integration_result[i,0,:,:]
+        
+        raise NotImplementedError
