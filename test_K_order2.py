@@ -62,10 +62,12 @@ Ngroup = ShapeField(Sup)
 resNgroup = Ngroup.evalOnQuadraturePoints()
 print("N grouped :")
 print(resNgroup)
-Bgroup = GradientOperator(Ngroup)
+
+"""Bgroup = GradientOperator(Ngroup)
 resBgroup = Bgroup.evalOnQuadraturePoints()
 print("B grouped :")
 print(resBgroup)
 intN = FieldIntegrator.integrate(Ngroup)
 print("N integration :")
 print(intN)
+"""
