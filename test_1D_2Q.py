@@ -57,39 +57,77 @@ fem = model.getFEEngine()
 elem_type = aka._segment_3
 ghost_type = aka.GhostType(1) #peu importe pour le moment
 Sup = Support(elem_filter, fem, spatial_dimension, elem_type, ghost_type)
+######################################################################
+# Début des tests :
 
-Ngroup = N(Sup,1)
+## array contenant les N :
+field_dimension = 1
+Ngroup = N(Sup,field_dimension)
 resNgroup = Ngroup.evalOnQuadraturePoints()
 print("N grouped :")
 print(resNgroup)
+print("avec shape :")
+print(resNgroup.shape)
 
+## Integration de N : 
+## !!!PROBLEM!!!
 intN = FieldIntegrator2.integrate(Ngroup)
-print("N integration :")
+print("integration de N :")
 print(intN)
+print("avec shape :")
+print(intN.shape)
+
 """
-assembledintN = FieldIntegrator2.assembly(Ngroup, intN)
-print("N integration assembled :")
-print(assembledintN)
-"""
+## Assemblage de l'integration de N :
+outputdim = 6 #nb_nodes * spatial_dim
+
+AssembledIntN=Assembly.assemblyV(conn,intN,outputdim, field_dimension)
+print("intégration de N assemblé :")
+print(AssembledIntN)
+
+## Gradient de N :
 Bgroup = GradientOperator(Ngroup)
 resBgroup = Bgroup.evalOnQuadraturePoints()
 print("B grouped :")
 print(resBgroup)
-"""
+print("avec shape :")
+print(resBgroup.shape)
+
+## Integration de grad(N) :
 intB = FieldIntegrator2.integrate(Bgroup)
 print("B integration :")
 print(intB)
-assembledintB = FieldIntegrator2.assembly(Bgroup, intB)
-print("B integration assembled :")
-print(assembledintB)
-"""
-"""
-BtB = Bgroup^Bgroup
-'''test = BtB.evalOnQuadraturePoints()
-print(test)'''
-print("K (vector) :")
-K = FieldIntegrator.integrate(BtB)
-print(K)
-print("K (matrix) :")
-print(K.reshape(3,3))#ici ok car symétrie mais à contrôler pour autres cas !
+print("avec shape :")
+print(intB.shape)
+
+## Assemblage de l'intégration de grad(N):
+outputdim = 6 #nb_nodes * spatial_dim
+AssembledIntB=Assembly.assemblyV(conn, intB,outputdim, field_dimension)
+print("Assemblage de l'intégration de grad(N)")
+print(AssembledIntB)
+
+## Test opération Transpose(B)@B :
+BtB = transpose(Bgroup)^Bgroup
+resBtB = BtB.evalOnQuadraturePoints()
+print("resultat BtB:")
+print(resBtB)
+print("avec shape")
+print(resBtB.shape)
+
+## Intégration de BtB :
+intBtB = FieldIntegrator2.integrate(BtB)
+print("résultat de l'intégration de BtB :")
+print(intBtB)
+print("avec shape :")
+print(intBtB.shape)
+
+## Assemblage de K gloable :
+outputdim1 = 6 #nb_nodes * spatial_dim
+outputdim2 = 6 #nb_nodes * spatial_dim
+
+Kglobale = Assembly.assemblyK(conn, intBtB, outputdim1,outputdim2, field_dimension)
+print("K globale :")
+print(Kglobale)
+print("avec shape :")
+print(Kglobale.shape)
 """
