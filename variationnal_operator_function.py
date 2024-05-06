@@ -23,7 +23,7 @@ class TensorField:
         pass
 
     def getDimensionForIntegration(self):
-        return np.prod(self.value_integration_points.shape[1:])
+        return np.prod(self.value_integration_points.shape[2:])
 
     def __mul__(self, f):
         return Multiplication(self, f)
@@ -327,15 +327,16 @@ class FieldIntegrator2:
         support=field.support
         
         value_integration_points=field.evalOnQuadraturePoints()
-        shape_output = value_integration_points.shape
-
+        shape_output = (value_integration_points.shape[0],1,value_integration_points.shape[2],value_integration_points.shape[3])
+        
 
         mesh=support.fem.getMesh()
         nb_element = mesh.getConnectivity(support.elem_type).shape[0]
-        
-        value_integration_points = value_integration_points.reshape((nb_element,-1))
+        nb_integration_points = support.fem.getNbIntegrationPoints(support.elem_type)
+
+        value_integration_points = value_integration_points.reshape((nb_element*nb_integration_points,-1))
         int_dim = field.getDimensionForIntegration()
-        
+
         result_integration = np.zeros((nb_element, int_dim))
 
         support.fem.integrate(value_integration_points,result_integration,int_dim, support.elem_type)
