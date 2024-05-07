@@ -103,7 +103,7 @@ print(AssembledIntB)
 """
 
 ## Test opération Transpose(B)@B :
-BtB = transpose(Bgroup)^Bgroup
+BtB = transpose(Bgroup)@Bgroup
 resBtB = BtB.evalOnQuadraturePoints()
 print("resultat BtB:")
 print(resBtB)

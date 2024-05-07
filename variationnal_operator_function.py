@@ -43,11 +43,8 @@ class TensorField:
     def __rsub__(self, f):
         return self.__sub__(f)
     
-    def __xor__(self, f):
+    def __matmul__(self, f):
         return Contraction(self, f)
-    
-    def __rxor__(self, f):
-        return self.__xor__(f)
  
     
 class Operator(TensorField):
@@ -183,6 +180,33 @@ class NodalTensorField(TensorField):
         
         return self.value_integration_points
     
+class ContractionOperation(Operator):
+
+    def __init__(self, *args ):
+
+        if len(args) == 2:
+            super().__init__(args[0],args[1])
+        elif len(args) == 1:
+            super().__init__(args[0])
+        else :
+            raise NotImplementedError
+        
+        #A discuter
+        self.value_integration_points = np.zeros((args[0])) #pas ok... le résultat d'une contraction peut être plus grand... 
+        self.subscripts_for_summation = None #est un string
+    
+    def setDimToContract(self, subscripts_for_summation):
+
+        self.subscripts_for_summation = subscripts_for_summation
+        return
+
+    def evalOnQuadraturePoints(self):
+
+        # erreur dans le cas où les dim ont pas été set, 
+        # ou alors juste avertissement que du coup on a fait une contraction sur les 2 dernière dimension
+        result = np.einsum(self.subscripts_for_summation, self.first, self.second)
+        return result
+
 
 class Contraction(Operator):
     #A modifier
