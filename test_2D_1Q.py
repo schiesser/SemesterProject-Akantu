@@ -72,9 +72,7 @@ print("avec shape :")
 print(intN.shape)
 
 ## Assemblage de l'integration de N :
-outputdim = 10 #nb_nodes * spatial_dim
-
-AssembledIntN=Assembly.assemblyV(conn,intN,outputdim, field_dimension)
+AssembledIntN=Assembly.assemblyV(intN, Sup, field_dimension)
 print("intégration de N assemblé :")
 print(AssembledIntN)
 
@@ -96,8 +94,7 @@ print(intB.shape)
 # !!! PROBLEM!!!
 """
 ## Assemblage de l'intégration de grad(N):
-outputdim = 10 #nb_nodes * spatial_dim
-AssembledIntB=Assembly.assemblyV(conn, intB,outputdim, field_dimension)
+AssembledIntB=Assembly.assemblyV(intB, Sup, field_dimension)
 print("Assemblage de l'intégration de grad(N)")
 print(AssembledIntB)
 """
@@ -118,10 +115,8 @@ print("avec shape :")
 print(intBtB.shape)
 
 ## Assemblage de K gloable :
-outputdim1 = 10 #nb_nodes * spatial_dim
-outputdim2 = 10 #nb_nodes * spatial_dim
 
-Kglobale = Assembly.assemblyK(conn, intBtB, outputdim1,outputdim2, field_dimension)
+Kglobale = Assembly.assemblyK(intBtB, Sup, field_dimension)
 print("K globale :")
 print(Kglobale)
 print("avec shape :")

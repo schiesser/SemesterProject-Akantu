@@ -367,10 +367,14 @@ class Assembly:
 
     @staticmethod
     def assembleNodalFieldIntegration(result_integration):
+
         return np.sum(result_integration,axis=0)
     
-    def assemblyK(conn, groupedKlocal, dim1, dim2, field_dim):
-        # pour matrice de rigidité globale
+    def assemblyK(groupedKlocal, support, field_dim):
+        
+        dim = support.fem.getMesh().getNbNodes() * field_dim
+        conn = support.fem.getMesh().getConnectivity(support.elem_type)
+
         n_elem  = conn.shape[0]
         n_nodes_per_elem = conn.shape[1]
         numEq = np.zeros((n_elem, field_dim*n_nodes_per_elem), dtype=int)
@@ -382,7 +386,7 @@ class Assembly:
                     for j in range(field_dim):
                         numEq[e, field_dim*i+j] = field_dim*conn[e, i]+j
 
-        K = np.zeros((dim1, dim2))
+        K = np.zeros((dim, dim))
 
         for e in range(n_elem):
 
@@ -395,9 +399,11 @@ class Assembly:
                     K[gi, gj] += K_locale[e,0,i, j]
         return K
 
-    def assemblyV(conn, groupedV, dim2, field_dim):
-      
-        #pour integration de N ou B
+    def assemblyV(groupedV, support, field_dim):
+        
+        dim = support.fem.getMesh().getNbNodes() * field_dim
+        conn = support.fem.getMesh().getConnectivity(support.elem_type)
+
         n_elem  = conn.shape[0]
         n_nodes_per_elem = conn.shape[1]
         numEq = np.zeros((n_elem, field_dim*n_nodes_per_elem), dtype=int)
@@ -409,7 +415,7 @@ class Assembly:
                     for j in range(field_dim):
                         numEq[e, field_dim*i+j] = field_dim*conn[e, i]+j
 
-        V = np.zeros((field_dim, dim2))
+        V = np.zeros((field_dim, dim))
 
         for e in range(n_elem):
 
