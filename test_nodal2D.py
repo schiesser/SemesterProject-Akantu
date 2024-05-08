@@ -85,10 +85,12 @@ print(v)
 
 print("Integration depl : ")
 integration_depl=FieldIntegrator.integrate(NTF)
-print(integration_depl)
+assembledint_depl = Assembly.assembleNodalFieldIntegration(integration_depl)
+print(assembledint_depl)
 
 # test integration with multiplication/addition/substraction
 newNTF=(2 - NTF*2 + 1)
 integration=FieldIntegrator.integrate(newNTF)
+assembledint = Assembly.assembleNodalFieldIntegration(integration)
 print("Integration de la fonction de tenseur : ")
-print(integration)
+print(assembledint)

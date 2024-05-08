@@ -350,19 +350,18 @@ class FieldIntegrator:
         support = field.support
         
         value_integration_points=field.evalOnQuadraturePoints()
-
         int_dim = field.getFieldDimension()
-        print(int_dim)
+
+        value_integration_points = value_integration_points.reshape((-1,int_dim))
+
         mesh=support.fem.getMesh()
         nb_element = mesh.getConnectivity(support.elem_type).shape[0]
-        nb_integration_points = support.fem.getNbIntegrationPoints(support.elem_type)
 
-        result_integration = np.zeros((nb_element*nb_integration_points, int_dim ))
+        result_integration = np.zeros((nb_element, int_dim ))
         
         support.fem.integrate(value_integration_points,result_integration,int_dim, support.elem_type)
-        integration=np.sum(result_integration,axis=0)
 
-        return integration
+        return result_integration
     
 class FieldIntegrator2:
     #provisoirement un deuxième classe d'intégration
@@ -377,11 +376,9 @@ class FieldIntegrator2:
         
         mesh=support.fem.getMesh()
         nb_element = mesh.getConnectivity(support.elem_type).shape[0]
-        nb_integration_points = support.fem.getNbIntegrationPoints(support.elem_type)
 
-        value_integration_points = value_integration_points.reshape((nb_element*nb_integration_points,-1))
         int_dim = field.getFieldDimension()
-        print(int_dim)
+        value_integration_points = value_integration_points.reshape((-1,int_dim))
 
         result_integration = np.zeros((nb_element, int_dim))
 
@@ -391,7 +388,11 @@ class FieldIntegrator2:
         return integration
     
 class Assembly:
+
     @staticmethod
+    def assembleNodalFieldIntegration(result_integration):
+        return np.sum(result_integration,axis=0)
+    
     def assemblyK(conn, groupedKlocal, dim1, dim2, field_dim):
         # pour matrice de rigidité globale
         n_elem  = conn.shape[0]
