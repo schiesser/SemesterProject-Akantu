@@ -54,6 +54,9 @@ class Operator(TensorField):
         elif len(args) == 1:
             self.first = args[0]
             self.second = None
+        elif len(args) == 0:
+            self.first = None
+            self.second = None
 
         self.support = self.first.support
     
@@ -186,34 +189,36 @@ class NodalTensorField(TensorField):
         
         return self.value_integration_points
     
-class ContractionOperation(Operator):
+class TypeOfContraction(Operator):
 
-    def __init__(self, *args ):
-
-        if len(args) == 2:
-            super().__init__(args[0],args[1])
-        elif len(args) == 1:
-            super().__init__(args[0])
-        else :
-            raise NotImplementedError
-        
+    def __init__(self, subscripts_for_summation ):
+        super.__init__()
+        #appelle contructeur sans first ou second ! à implementer !
         #A discuter
-        self.value_integration_points = np.zeros((args[0])) #pas ok... le résultat d'une contraction peut être plus grand... 
-        self.subscripts_for_summation = None #est un string
+        self.value_integration_points = None 
+        self.subscripts_for_summation = subscripts_for_summation #est un string
     
-    def setDimToContract(self, subscripts_for_summation):
-
-        self.subscripts_for_summation = subscripts_for_summation
-        return
+    def __call__(self,*args):
+        return Contraction2(*args)
 
     def evalOnQuadraturePoints(self):
+        # besoins d'être définis pour pouvoir instancier l'objet (sinon pure virtuel)
+        raise NotImplementedError
 
-        # erreur dans le cas où les dim ont pas été set, 
-        # ou alors juste avertissement que du coup on a fait une contraction sur les 2 dernière dimension
-        result = np.einsum(self.subscripts_for_summation, self.first, self.second)
+
+class Contraction2(TypeOfContraction):
+    def __init___(self, *args):
+        Operator.__init__()
+        self.args = args
+    
+    def evalOnQuadraturePoints(self):
+        
+        fieldevaluated = [tensor_field.evalOnQuadraturePoints() for tensor_field in self.args]
+
+        result = np.einsum(self.subscripts_for_summation, fieldevaluated)
+        
         return result
-
-
+    
 class Contraction(Operator):
     #A modifier
     def __init__(self, f1, f2):
