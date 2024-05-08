@@ -70,7 +70,7 @@ print("avec shape :")
 print(resNgroup.shape)
 
 ## Integration de N : 
-intN = FieldIntegrator2.integrate(Ngroup)
+intN = FieldIntegrator.integrate(Ngroup)
 print("integration de N :")
 print(intN)
 print("avec shape :")
@@ -92,7 +92,7 @@ print("avec shape :")
 print(resBgroup.shape)
 
 ## Integration de grad(N) :
-intB = FieldIntegrator2.integrate(Bgroup)
+intB = FieldIntegrator.integrate(Bgroup)
 print("B integration :")
 print(intB)
 print("avec shape :")
@@ -113,7 +113,7 @@ print("avec shape")
 print(resBtB.shape)
 
 ## Intégration de BtB :
-intBtB = FieldIntegrator2.integrate(BtB)
+intBtB = FieldIntegrator.integrate(BtB)
 print("résultat de l'intégration de BtB :")
 print(intBtB)
 print("avec shape :")

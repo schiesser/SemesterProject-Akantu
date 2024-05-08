@@ -362,31 +362,7 @@ class FieldIntegrator:
         support.fem.integrate(value_integration_points,result_integration,int_dim, support.elem_type)
 
         return result_integration
-    
-class FieldIntegrator2:
-    #provisoirement un deuxième classe d'intégration
-    #une fois que les tests sont passés, je regrouperai en une seule
-    @staticmethod
-    def integrate(field):
-        
-        support=field.support
-        
-        value_integration_points=field.evalOnQuadraturePoints()
-        shape_output = (value_integration_points.shape[0],1,value_integration_points.shape[2],value_integration_points.shape[3])
-        
-        mesh=support.fem.getMesh()
-        nb_element = mesh.getConnectivity(support.elem_type).shape[0]
 
-        int_dim = field.getFieldDimension()
-        value_integration_points = value_integration_points.reshape((-1,int_dim))
-
-        result_integration = np.zeros((nb_element, int_dim))
-
-        support.fem.integrate(value_integration_points,result_integration,int_dim, support.elem_type)
-        integration = result_integration.reshape(shape_output)
-
-        return integration
-    
 class Assembly:
 
     @staticmethod
@@ -398,7 +374,9 @@ class Assembly:
         n_elem  = conn.shape[0]
         n_nodes_per_elem = conn.shape[1]
         numEq = np.zeros((n_elem, field_dim*n_nodes_per_elem), dtype=int)
-        
+
+        groupedKlocal = groupedKlocal.reshape((n_elem, 1, n_nodes_per_elem*field_dim, n_nodes_per_elem*field_dim))
+
         for e in range(n_elem):
             for i in range(n_nodes_per_elem):
                     for j in range(field_dim):
@@ -418,11 +396,14 @@ class Assembly:
         return K
 
     def assemblyV(conn, groupedV, dim2, field_dim):
+      
         #pour integration de N ou B
         n_elem  = conn.shape[0]
         n_nodes_per_elem = conn.shape[1]
         numEq = np.zeros((n_elem, field_dim*n_nodes_per_elem), dtype=int)
         
+        groupedV = groupedV.reshape((n_elem, 1, -1, n_nodes_per_elem*field_dim))
+
         for e in range(n_elem):
             for i in range(n_nodes_per_elem):
                     for j in range(field_dim):
