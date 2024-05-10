@@ -45,8 +45,7 @@ class TensorField:
  
     
 class Operator(TensorField):
-
-    
+ 
     def __init__(self, *args):
         self.args = args
         self.support = args[0].support
@@ -61,15 +60,19 @@ class Addition(Operator):
 
     def __init__(self, f1, f2):
         
-        if not "NodalTensorField" in (f1.name and f2.name):
-            raise TypeError("this operation only works for NodalTensorField")
-
         super().__init__(f1, f2)
 
         if isinstance(f2, (int, float)):
             self.name = "("+ f1.name + ".ConstantAddition"+")"
+
+            if not "NodalTensorField" in f1.name:
+                raise TypeError("this operation only works for NodalTensorField")
+            
         elif isinstance(f2, TensorField):
             self.name = "("+ f1.name + " + " + f2.name + ")"
+
+            if not "NodalTensorField" in (f1.name and f2.name):
+                raise TypeError("this operation only works for NodalTensorField")
         
         self.value_integration_points = np.zeros(f1.value_integration_points.shape)
     
@@ -114,16 +117,20 @@ class transpose(Operator):
 class Substraction(Operator):
 
     def __init__(self, f1, f2):
-
-        if not "NodalTensorField" in (f1.name and f2.name):
-            raise TypeError("this operation only works for NodalTensorField")
         
         super().__init__(f1, f2)
 
         if isinstance(f2, (int, float)):
             self.name = "("+f1.name + ".ConstantSubstraction"+")"
+
+            if not "NodalTensorField" in f1.name:
+                raise TypeError("this operation only works for NodalTensorField")
+            
         elif isinstance(f2, TensorField):
             self.name = "("+ f1.name + " - " + f2.name + ")"
+
+            if not "NodalTensorField" in (f1.name and f2.name):
+                raise TypeError("this operation only works for NodalTensorField")
 
         self.value_integration_points = np.zeros(f1.value_integration_points.shape)
 
@@ -144,16 +151,20 @@ class Substraction(Operator):
 class Multiplication(Operator):
 
     def __init__(self, f1, f2):
-
-        if not "NodalTensorField" in (f1.name and f2.name):
-            raise TypeError("this operation only works for NodalTensorField")
         
         super().__init__(f1, f2)
 
         if isinstance(f2, (int, float)):
             self.name = "("+f1.name + ".ConstantMultiplication"+")"
+
+            if not "NodalTensorField" in f1.name:
+                raise TypeError("this operation only works for NodalTensorField")
+            
         elif isinstance(f2, TensorField):
             self.name = "("+ f1.name + " * " + f2.name + ")"
+
+            if not "NodalTensorField" in (f1.name and f2.name):
+                raise TypeError("this operation only works for NodalTensorField")
 
         self.value_integration_points = np.zeros(f1.value_integration_points.shape)
 
@@ -233,7 +244,8 @@ class Contraction(Operator):
     #A modifier
     def __init__(self, *args):
         super().__init__(*args)
-        
+        args_name = " ".join([tensor_field.name for tensor_field in self.args])
+        self.name = "Contraction("+args_name+")"
         #Ajouter exceptions de contrôle de dimensions !
         self.value_integration_points = None
     
@@ -259,6 +271,7 @@ class EinsumContraction(Contraction):
         self.args = args
         self.subscripts_for_summation = subscripts_for_summation
         self.value_integration_points = None
+    
     def evalOnQuadraturePoints(self):
 
         fieldevaluated = [tensor_field.evalOnQuadraturePoints() for tensor_field in self.args]
@@ -367,7 +380,6 @@ class GradientOperator(Operator):
 
 class FieldIntegrator:
     @staticmethod
-    # Valide pour des cas où on veut intégrer un array de dimension 2 (par exemple les NodalTensorField)
     def integrate(field):
         
         support = field.support
@@ -378,10 +390,16 @@ class FieldIntegrator:
         value_integration_points = value_integration_points.reshape((-1,int_dim))
 
         mesh=support.fem.getMesh()
+
         nb_element = mesh.getConnectivity(support.elem_type).shape[0]
 
         result_integration = np.zeros((nb_element, int_dim ))
         
+        NbIntegrationPoints=field.support.fem.getNbIntegrationPoints(support.elem_type)
+
+        if value_integration_points.shape[0] != nb_element*NbIntegrationPoints:
+                raise ValueError("wrong dimensions of value_integration_points after the reshape, control the getFieldDimension() !")        
+
         support.fem.integrate(value_integration_points,result_integration,int_dim, support.elem_type)
 
         return result_integration
