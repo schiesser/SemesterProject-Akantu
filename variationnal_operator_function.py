@@ -95,7 +95,7 @@ class transpose(Operator):
     def __init__(self,f):
 
         if not isinstance(f, (GradientOperator, N)):
-            raise TypeError("Be careful if you want to transpose an object different from grad(N) or N. It transposes the last 2 dimensions of an array. Other possibility : use Contraction with particular subscripts: it uses einsum form numpy.")
+            raise TypeError("Be careful if you want to transpose an object different from grad(N) or N. It transposes the last 2 dimensions of an array. Other possibility : use Contraction class with particular subscripts: it uses einsum form numpy.")
         
         super().__init__(f)
         self.name = "transpose"+"("+f.name+")"
