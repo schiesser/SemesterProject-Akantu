@@ -86,27 +86,27 @@ class Addition(Operator):
     
 class transpose(Operator):
     # valide pour des array d'ordre 4 (nb_elem, nb_points_integration, dim1, dim2)
-    # transpose dim1 et dim2
-    # à généraliser par la suite selon besoins
     def __init__(self,f):
 
+        if not isinstance(f, (GradientOperator, N)):
+            raise ValueError("Be careful if you want to transpose an object different from grad(N) or N. It transposes the last 2 dimensions of an array. Other possibility : use Contraction with particular subscripts: it uses einsum form numpy.")
+        
         super().__init__(f)
         self.name = "transpose"+"("+f.name+")"
-        self.value_integration_points = np.zeros((f.value_integration_points.shape[0],f.value_integration_points.shape[1],f.value_integration_points.shape[3],f.value_integration_points.shape[2]))
+        self.value_integration_points = np.transpose(f.value_integration_points, axes=list(range(len(f.value_integration_points.shape) - 2)) + [-1, -2])    
     
     def evalOnQuadraturePoints(self):
 
         firstevaluated = self.args[0].evalOnQuadraturePoints()
 
-        self.value_integration_points = np.transpose(firstevaluated, axes=(0,1,3,2))
-        
+        self.value_integration_points = np.transpose(firstevaluated, axes=list(range(len(firstevaluated.shape) - 2)) + [-1, -2])        
         return self.value_integration_points
 
     def getFieldDimension(self):
         #pas fait pour être intégré "brut" :
-        #on intègre un objet retourné par une opération entre plusieurs objet dont un est transposé
-        #utilise donc le getFieldDim de la contraction par exemple.
-        raise NotImplementedError
+        #goal : intégrer un objet retourné par une opération entre plusieurs objet dont un est transposé
+        #utilise donc le getFieldDim de la contraction par exemple, mais jamais celui-ci directement.
+        raise NotImplementedError("Not possible to directly integrate a transpose.")
 
 class Substraction(Operator):
 
