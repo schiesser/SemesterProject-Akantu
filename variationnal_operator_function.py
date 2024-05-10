@@ -46,24 +46,15 @@ class TensorField:
     
 class Operator(TensorField):
 
-    def __init__(self, *args ):
-
-        if len(args) == 2:
-            self.first = args[0]
-            self.second = args[1]
-        elif len(args) == 1:
-            self.first = args[0]
-            self.second = None
-        elif len(args) == 0:
-            self.first = None
-            self.second = None
-
-        self.support = self.first.support
+    
+    def __init__(self, *args):
+        self.args = args
+        self.support = args[0].support
     
     def getFieldDimension(self):
         # Ok pour toutes les opération sur NodalTensorField, 
         # autres cas : override dans classes dérivées
-        return self.first.getFieldDimension()
+        return self.args[0].getFieldDimension()
 
 
 class Addition(Operator):
@@ -81,13 +72,13 @@ class Addition(Operator):
     
     def evalOnQuadraturePoints(self):
 
-        firstevaluated = self.first.evalOnQuadraturePoints()
+        firstevaluated = self.args[0].evalOnQuadraturePoints()
 
-        if isinstance(self.second, (int, float)):
-            self.value_integration_points = firstevaluated + self.second
+        if isinstance(self.args[1], (int, float)):
+            self.value_integration_points = firstevaluated + self.args[1]
         
-        elif isinstance(self.second, TensorField):
-            secondevaluated = self.second.evalOnQuadraturePoints()
+        elif isinstance(self.args[1], TensorField):
+            secondevaluated = self.args[1].evalOnQuadraturePoints()
             self.value_integration_points = firstevaluated + secondevaluated
         
         return self.value_integration_points
@@ -100,12 +91,12 @@ class transpose(Operator):
     def __init__(self,f):
 
         super().__init__(f)
-        self.name = "transpose"+"("+self.first.name+")"
+        self.name = "transpose"+"("+f.name+")"
         self.value_integration_points = np.zeros((f.value_integration_points.shape[0],f.value_integration_points.shape[1],f.value_integration_points.shape[3],f.value_integration_points.shape[2]))
     
     def evalOnQuadraturePoints(self):
 
-        firstevaluated = self.first.evalOnQuadraturePoints()
+        firstevaluated = self.args[0].evalOnQuadraturePoints()
 
         self.value_integration_points = np.transpose(firstevaluated, axes=(0,1,3,2))
         
@@ -132,13 +123,13 @@ class Substraction(Operator):
 
     def evalOnQuadraturePoints(self):
 
-        firstevaluated = self.first.evalOnQuadraturePoints()
+        firstevaluated = self.args[0].evalOnQuadraturePoints()
 
-        if isinstance(self.second, (int, float)):
-            self.value_integration_points = firstevaluated - self.second
+        if isinstance(self.args[1], (int, float)):
+            self.value_integration_points = firstevaluated - self.args[1]
         
-        elif isinstance(self.second, TensorField):
-            secondevaluated = self.second.evalOnQuadraturePoints()
+        elif isinstance(self.args[1], TensorField):
+            secondevaluated = self.args[1].evalOnQuadraturePoints()
             self.value_integration_points = firstevaluated - secondevaluated
 
         return self.value_integration_points
@@ -159,13 +150,13 @@ class Multiplication(Operator):
 
     def evalOnQuadraturePoints(self):
 
-        firstevaluated = self.first.evalOnQuadraturePoints()
+        firstevaluated = self.args[0].evalOnQuadraturePoints()
 
-        if isinstance(self.second, (int, float)):
-            self.value_integration_points = firstevaluated * self.second
+        if isinstance(self.args[1], (int, float)):
+            self.value_integration_points = firstevaluated * self.args[1]
         
-        elif isinstance(self.second, TensorField):
-            secondevaluated = self.second.evalOnQuadraturePoints()
+        elif isinstance(self.args[1], TensorField):
+            secondevaluated = self.args[1].evalOnQuadraturePoints()
             self.value_integration_points = firstevaluated * secondevaluated
         
         return self.value_integration_points
@@ -188,66 +179,84 @@ class NodalTensorField(TensorField):
         self.support.fem.interpolateOnIntegrationPoints(self.nodal_field, self.value_integration_points, self.value_integration_points.shape[1], self.support.elem_type)
         
         return self.value_integration_points
-    
-class TypeOfContraction(Operator):
+"""   
+class TypeOfContraction:
 
-    def __init__(self, subscripts_for_summation ):
-        super.__init__()
-        #appelle contructeur sans first ou second ! à implementer !
+    def __init__(self, subscripts_for_summation):
         #A discuter
-        self.value_integration_points = None 
         self.subscripts_for_summation = subscripts_for_summation #est un string
     
+
     def __call__(self,*args):
-        return Contraction2(*args)
+
+        return Contraction(*((self.subscripts_for_summation,) + args))
+
+
+class Contraction(Operator):
+    def __init__(self, *args):
+
+        if isinstance(args[0], str):
+            self.subscripts_for_summation = args[0]
+            super().__init__(*args[1:])
+        else :
+            self.subscripts_for_summation = None
+            super().__init__(*args)
+
+        self.value_integration_points = None
 
     def evalOnQuadraturePoints(self):
-        # besoins d'être définis pour pouvoir instancier l'objet (sinon pure virtuel)
-        raise NotImplementedError
-
-
-class Contraction2(TypeOfContraction):
-    def __init___(self, *args):
-        Operator.__init__()
-        self.args = args
-    
-    def evalOnQuadraturePoints(self):
-        
         fieldevaluated = [tensor_field.evalOnQuadraturePoints() for tensor_field in self.args]
 
-        result = np.einsum(self.subscripts_for_summation, fieldevaluated)
+        if self.subscripts_for_summation is None:
+
+            self.value_integration_points = np.matmul(*fieldevaluated)
+        else :
         
-        return result
+            self.value_integration_points = np.einsum(self.subscripts_for_summation, *fieldevaluated)
+        
+        return self.value_integration_points
     
+    def getFieldDimension(self):
+        return np.prod(self.value_integration_points.shape[-2:])
+
+"""
 class Contraction(Operator):
     #A modifier
-    def __init__(self, f1, f2):
-        super().__init__(f1, f2)
+    def __init__(self, *args):
+        super().__init__(*args)
         
         #Ajouter exceptions de contrôle de dimensions !
         self.value_integration_points = None
     
     def evalOnQuadraturePoints(self):
 
-        firstevaluated = self.first.evalOnQuadraturePoints()
-        secondevaluated = self.second.evalOnQuadraturePoints()
+        firstevaluated = self.args[0].evalOnQuadraturePoints()
+        secondevaluated = self.args[1].evalOnQuadraturePoints()
         
         self.value_integration_points = np.matmul(firstevaluated,secondevaluated)
-
-        """tests avec utilisation einsum :
-        print("shape de a :")
-        print(a.shape)
-        print("shape de b :")
-        print(b.shape)
-        res_contraction = np.einsum('ijkl,jlmn->ikmn', a, b)
-        res_contraction = np.einsum('qi,qj->qij', a, b) # à géneraliser selon la dimension
-        self.value_integration_points = res_contraction
-        """
 
         return self.value_integration_points
     
     def getFieldDimension(self):
         return np.prod(self.value_integration_points.shape[-2:])
+    
+    def __call__(self,subscripts_for_summation):
+
+        return EinsumContraction(subscripts_for_summation, *self.args)
+
+
+class EinsumContraction(Contraction):
+    def __init__(self, subscripts_for_summation, *args):
+        self.args = args
+        self.subscripts_for_summation = subscripts_for_summation
+        self.value_integration_points = None
+    def evalOnQuadraturePoints(self):
+
+        fieldevaluated = [tensor_field.evalOnQuadraturePoints() for tensor_field in self.args]
+        
+        self.value_integration_points = np.einsum(self.subscripts_for_summation, *fieldevaluated)
+        
+        return self.value_integration_points
 
 class ShapeField(TensorField):
     def __init__(self, support):
@@ -298,12 +307,12 @@ class GradientOperator(Operator):
         super().__init__(f1)
         self.name = "Gradient(" + f1.name + ")"
 
-        if isinstance(self.first, ShapeField):
-            self.conn = self.first.conn
+        if isinstance(f1, ShapeField):
+            self.conn = f1.conn
             self.nb_elem = self.conn.shape[0]
-            self.NbIntegrationPoints=self.first.NbIntegrationPoints
+            self.NbIntegrationPoints=f1.NbIntegrationPoints
             self.nb_nodes_per_elem = self.conn.shape[1]
-            self.dim_field = self.first.dim_field
+            self.dim_field = f1.dim_field
 
             if self.support.spatial_dimension == 1 :
                 self.nb_line = 1
@@ -315,7 +324,7 @@ class GradientOperator(Operator):
 
     def evalOnQuadraturePoints(self):
 
-        if isinstance(self.first, ShapeField):
+        if isinstance(self.args[0], ShapeField):
 
             B_without_dim_extension = np.zeros((self.nb_elem, self.NbIntegrationPoints,1, self.nb_nodes_per_elem*self.support.spatial_dimension))
             derivatives_shapes = self.support.fem.getShapesDerivatives(self.support.elem_type)
