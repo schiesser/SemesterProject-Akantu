@@ -60,6 +60,9 @@ class Operator(TensorField):
 class Addition(Operator):
 
     def __init__(self, f1, f2):
+        
+        if not "NodalTensorField" in (f1.name and f2.name):
+            raise TypeError("this operation only works for NodalTensorField")
 
         super().__init__(f1, f2)
 
@@ -85,11 +88,11 @@ class Addition(Operator):
     
     
 class transpose(Operator):
-    # valide pour des array d'ordre 4 (nb_elem, nb_points_integration, dim1, dim2)
+    # transpose les 2 dernières dimensions de l'array : "value_integration_point"; pensé pour les type GradientOperator ou N. 
     def __init__(self,f):
 
         if not isinstance(f, (GradientOperator, N)):
-            raise ValueError("Be careful if you want to transpose an object different from grad(N) or N. It transposes the last 2 dimensions of an array. Other possibility : use Contraction with particular subscripts: it uses einsum form numpy.")
+            raise TypeError("Be careful if you want to transpose an object different from grad(N) or N. It transposes the last 2 dimensions of an array. Other possibility : use Contraction with particular subscripts: it uses einsum form numpy.")
         
         super().__init__(f)
         self.name = "transpose"+"("+f.name+")"
@@ -112,6 +115,9 @@ class Substraction(Operator):
 
     def __init__(self, f1, f2):
 
+        if not "NodalTensorField" in (f1.name and f2.name):
+            raise TypeError("this operation only works for NodalTensorField")
+        
         super().__init__(f1, f2)
 
         if isinstance(f2, (int, float)):
@@ -139,6 +145,9 @@ class Multiplication(Operator):
 
     def __init__(self, f1, f2):
 
+        if not "NodalTensorField" in (f1.name and f2.name):
+            raise TypeError("this operation only works for NodalTensorField")
+        
         super().__init__(f1, f2)
 
         if isinstance(f2, (int, float)):
@@ -164,7 +173,7 @@ class Multiplication(Operator):
 
 class NodalTensorField(TensorField):
     def __init__(self, name, support, nodal_field):
-        super().__init__(name, support)
+        super().__init__("NodalTensorField("+name+")", support)
         self.nodal_field = nodal_field
         
         nb_integration_points = self.support.fem.getNbIntegrationPoints(self.support.elem_type)
