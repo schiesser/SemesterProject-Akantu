@@ -85,6 +85,10 @@ class Addition(Operator):
         
         elif isinstance(self.args[1], TensorField):
             secondevaluated = self.args[1].evalOnQuadraturePoints()
+
+            if np.all(firstevaluated.shape != secondevaluated):
+                raise TypeError("the 2 evaluated 'value_integration_point' don't have the same shape : can't do this operation")
+
             self.value_integration_points = firstevaluated + secondevaluated
         
         return self.value_integration_points
@@ -141,8 +145,12 @@ class Substraction(Operator):
         if isinstance(self.args[1], (int, float)):
             self.value_integration_points = firstevaluated - self.args[1]
         
-        elif isinstance(self.args[1], TensorField):
+        elif isinstance(self.args[1], TensorField):           
             secondevaluated = self.args[1].evalOnQuadraturePoints()
+
+            if np.all(firstevaluated.shape != secondevaluated):
+                raise TypeError("the 2 evaluated 'value_integration_point' don't have the same shape : can't do this operation")
+            
             self.value_integration_points = firstevaluated - secondevaluated
 
         return self.value_integration_points
@@ -177,6 +185,10 @@ class Multiplication(Operator):
         
         elif isinstance(self.args[1], TensorField):
             secondevaluated = self.args[1].evalOnQuadraturePoints()
+
+            if np.all(firstevaluated.shape != secondevaluated):
+                raise TypeError("the 2 evaluated 'value_integration_point' don't have the same shape : can't do this operation")
+            
             self.value_integration_points = firstevaluated * secondevaluated
         
         return self.value_integration_points
