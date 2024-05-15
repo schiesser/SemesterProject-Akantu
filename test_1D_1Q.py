@@ -9,11 +9,13 @@ print(aka.__version__)
 # Mesh generation
 
 mesh_file = """
-Point(1) = {0, 0, 0, 0.5};
-Point(2) = {1, 0, 0, 0.5};
+Point(1) = {0, 0, 0, 0.25};
+Point(2) = {0.25, 0, 0, 0.75};
+Point(3) = {1, 0, 0, 0.75};
 """
 mesh_file += """
 Line(1) = {1, 2};
+Line(2) = {2, 3};
 """
 open("segment.geo", 'w').write(mesh_file)
 points, conn = meshGeo('segment.geo', dim=1, order=1)
@@ -37,6 +39,8 @@ ghost_type = aka.GhostType(1) #peu importe pour le moment
 Sup = Support(elem_filter, fem, spatial_dimension, elem_type, ghost_type)
 ######################################################################
 # Début des tests :
+##tolerance :
+tol = 10e-8
 
 ## array contenant les N :
 field_dimension = 2
@@ -58,6 +62,11 @@ print(intN.shape)
 AssembledIntN=Assembly.assemblyV(intN, Sup, field_dimension)
 print("intégration de N assemblé :")
 print(AssembledIntN)
+# True result :
+expected_result_integration_N = np.array([[0.125,0.0,0.5,0.0,0.375,0.0],[0.0,0.125,0.0,0.5,0.0,0.375]])
+# control of the computed integration of N :
+error = np.abs(AssembledIntN-expected_result_integration_N)
+assert error.all()<tol, "integration of N isn't correct"
 
 ## Gradient de N :
 Bgroup = GradientOperator(Ngroup)
@@ -78,6 +87,11 @@ print(intB.shape)
 AssembledIntB=Assembly.assemblyV(intB, Sup, field_dimension)
 print("Assemblage de l'intégration de grad(N)")
 print(AssembledIntB)
+# True result :
+expected_result_integration_gradN = np.array([[-1.0, 0.0,0.0,0.0,1.0,0.0],[0.0,-1.0,0.0,0.0,0.0,1.0]])
+# control of the computed integration of grad(N) :
+error = np.abs(AssembledIntB - expected_result_integration_gradN)
+assert error.all()<tol, "integration of grad(N) isn't correct"
 
 ## Test opération Transpose(B)@B :
 BtB = transpose(Bgroup)@Bgroup
@@ -101,3 +115,8 @@ print("K globale :")
 print(Kglobale)
 print("avec shape :")
 print(Kglobale.shape)
+# True result :
+expected_result_K = np.array([[4.0,0.0,-4.0,0.0,0.0,0.0],[0.0,4.0,0.0,-4.0,0.0,0.0],[-4.0,0.0,5.33333333,0.0,-1.33333333,0.0],[0.0,4.0,0.0,5.33333333,0.0,-1.33333333],[0.0,0.0,-1.33333333,0.0,1.33333333,0.0],[0.0,0.0,0.0,-1.33333333,0.0,1.33333333]])
+# control of the computed integration of grad(N) :
+error = np.abs(Kglobale-expected_result_K)
+assert error.all()<tol, "Gloable Stiffness matrix isn't correct"
