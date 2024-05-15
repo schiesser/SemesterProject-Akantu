@@ -443,3 +443,37 @@ class Assembly:
                     V[:, gi] += V_locale[e,0,:,i]
 
         return V
+    
+    def assemblyB(groupedV, support, field_dim):
+
+        dim = support.fem.getMesh().getNbNodes() * field_dim
+        conn = support.fem.getMesh().getConnectivity(support.elem_type)
+
+        n_elem  = conn.shape[0]
+        n_nodes_per_elem = conn.shape[1]
+        numEq = np.zeros((n_elem, field_dim*n_nodes_per_elem), dtype=int)
+        
+        groupedV = groupedV.reshape((n_elem, 1, -1, n_nodes_per_elem*field_dim))
+
+        for e in range(n_elem):
+            for i in range(n_nodes_per_elem):
+                    for j in range(field_dim):
+                        numEq[e, field_dim*i+j] = field_dim*conn[e, i]+j
+
+        if support.spatial_dimension == 1:
+            V = np.zeros((field_dim, dim))
+        elif support.spatial_dimension == 2 :
+            V=np.zeros((3,dim))
+
+        for e in range(n_elem):
+
+            ddl = numEq[e, :]
+
+            V_locale = groupedV
+
+            for i, gi in enumerate(ddl):
+                    V[:, gi] += V_locale[e,0,:,i]
+
+        if support.spatial_dimension ==2 and field_dim==1:
+            V[-1,:]=V[-1,:]*(1/2)
+        return V
