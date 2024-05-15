@@ -3,6 +3,7 @@ import akantu as aka
 from variationnal_operator_function import *
 import matplotlib.tri as tri
 import matplotlib.pyplot as plt
+from plot import *
 
 print(aka.__file__)
 print(aka.__version__)
@@ -26,10 +27,12 @@ Line Loop(5) = {1, 2, 3, 4};
 """
 mesh_file += """
 Plane Surface(6) = {5};
+Physical Surface("Mesh") = {6};
 """
 
 open("triangle.geo", 'w').write(mesh_file)
-
+#.msh
+nodes, conn = meshGeo("triangle.geo", dim =2, order=1, element_type='triangle')
 # reading the mesh
 spatial_dimension = 2
 mesh_file = 'triangle.msh'

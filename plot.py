@@ -4,7 +4,7 @@ import meshio
 import subprocess
 import os
 
-def readMesh(filename, element_type='line'):
+def readMesh(filename, element_type):
     mesh = meshio.read(filename)
     return mesh.points[:, :2], mesh.cells_dict[element_type]
 
@@ -21,13 +21,22 @@ def plotMesh(coords, connectivity, **kwargs):
     #plt.show()
     plt.savefig('mesh.png')
 
-def meshGeo(filename, dim=2, order=1):
+def meshGeo(filename, dim=2, order=1, element_type='line'):
     out = os.path.splitext(filename)[0] + '.msh'
-    ret = subprocess.run(f"gmsh -2 -order 1 -o {out} {filename}", shell=True)
+    ret = subprocess.run(f"gmsh -2 -order {order} -o {out} {filename}", shell=True)
     if ret.returncode:
         print("Beware, gmsh could not run: mesh is not generated")
     else:
         print("Mesh generated")
-        mesh = readMesh(out)
+        mesh = readMesh(out, element_type)
         return mesh
     return None
+
+def plotMeshs3(points, conn):
+    plt.figure(figsize=(8, 6))
+    plt.plot(points[:, 0], points[:, 1], 'ko', markersize=3)
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    plt.title('Maillage')
+    plt.axis('equal')
+    plt.savefig('segment3mesh.png')
