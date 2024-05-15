@@ -211,13 +211,15 @@ class NodalTensorField(TensorField):
         self.support.fem.interpolateOnIntegrationPoints(self.nodal_field, self.value_integration_points, self.value_integration_points.shape[1], self.support.elem_type)
         
         return self.value_integration_points
-"""   
-class TypeOfContraction:
+   
+class GenericOperator:
 
-    def __init__(self, subscripts_for_summation):
-        #A discuter
-        self.subscripts_for_summation = subscripts_for_summation #est un string
-    
+    def __init__(self, *args):
+        final=args[-1]
+        inputs = args[:-1]
+
+        self.subscripts_for_summation = ','.join(["xy"+i for i in inputs])
+        self.subscripts_for_summation+= "->" + "xy" + final
 
     def __call__(self,*args):
 
@@ -234,7 +236,7 @@ class Contraction(Operator):
             self.subscripts_for_summation = None
             super().__init__(*args)
 
-        self.value_integration_points = None
+        self.value_integration_points = None #donner bonne dimension !
 
     def evalOnQuadraturePoints(self):
         fieldevaluated = [tensor_field.evalOnQuadraturePoints() for tensor_field in self.args]
@@ -251,46 +253,6 @@ class Contraction(Operator):
     def getFieldDimension(self):
         return np.prod(self.value_integration_points.shape[-2:])
 
-"""
-class Contraction(Operator):
-    #A modifier
-    def __init__(self, *args):
-        super().__init__(*args)
-        args_name = " ".join([tensor_field.name for tensor_field in self.args])
-        self.name = "Contraction("+args_name+")"
-        #Ajouter exceptions de contrôle de dimensions !
-        self.value_integration_points = None
-    
-    def evalOnQuadraturePoints(self):
-
-        firstevaluated = self.args[0].evalOnQuadraturePoints()
-        secondevaluated = self.args[1].evalOnQuadraturePoints()
-        
-        self.value_integration_points = np.matmul(firstevaluated,secondevaluated)
-
-        return self.value_integration_points
-    
-    def getFieldDimension(self):
-        return np.prod(self.value_integration_points.shape[-2:])
-    
-    def __call__(self,subscripts_for_summation):
-
-        return EinsumContraction(subscripts_for_summation, *self.args)
-
-
-class EinsumContraction(Contraction):
-    def __init__(self, subscripts_for_summation, *args):
-        self.args = args
-        self.subscripts_for_summation = subscripts_for_summation
-        self.value_integration_points = None
-    
-    def evalOnQuadraturePoints(self):
-
-        fieldevaluated = [tensor_field.evalOnQuadraturePoints() for tensor_field in self.args]
-        
-        self.value_integration_points = np.einsum(self.subscripts_for_summation, *fieldevaluated)
-        
-        return self.value_integration_points
 
 class ShapeField(TensorField):
     def __init__(self, support):
@@ -355,7 +317,9 @@ class GradientOperator(Operator):
                 self.nb_line = 3
 
             self.value_integration_points = np.zeros((self.nb_elem, self.NbIntegrationPoints, self.nb_line, self.nb_nodes_per_elem * self.dim_field))
-
+        else : 
+            raise NotImplementedError("gradient is implemented only for a shapefield")
+        
     def evalOnQuadraturePoints(self):
 
         if isinstance(self.args[0], ShapeField):
