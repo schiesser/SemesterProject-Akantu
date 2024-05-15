@@ -214,11 +214,10 @@ class NodalTensorField(TensorField):
    
 class GenericOperator:
 
-    def __init__(self, *args):
-        final=args[-1]
-        inputs = args[:-1]
-
-        self.subscripts_for_summation = ','.join(["xy"+i for i in inputs])
+    def __init__(self, *args, final=None):
+        if final==None:
+            raise ValueError("please give the indices of result array")
+        self.subscripts_for_summation = ','.join(["xy"+i for i in args])
         self.subscripts_for_summation+= "->" + "xy" + final
 
     def __call__(self,*args):
