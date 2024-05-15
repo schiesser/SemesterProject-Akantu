@@ -310,7 +310,7 @@ class GradientOperator(Operator):
             self.dim_field = f1.dim_field
 
             if self.support.spatial_dimension == 1 :
-                self.nb_line = 1
+                self.nb_line = 1 *self.dim_field
 
             elif self.support.spatial_dimension == 2 :
                 self.nb_line = 3
@@ -329,7 +329,7 @@ class GradientOperator(Operator):
 
             if self.support.spatial_dimension == 1:
                 for i in range(self.dim_field):
-                    self.value_integration_points[:,:,:,i::self.dim_field]=derivatives_shapes
+                    self.value_integration_points[:,:,i::self.dim_field,i::self.dim_field]=derivatives_shapes
 
             elif self.support.spatial_dimension == 2:
                 for i in range(self.nb_elem):
