@@ -302,11 +302,14 @@ class GradientOperator(Operator):
         super().__init__(f1)
         self.name = "Gradient(" + f1.name + ")"
 
-        if isinstance(f1, ShapeField):
-            self.conn = f1.conn
-            self.nb_elem = self.conn.shape[0]
-            self.NbIntegrationPoints=f1.NbIntegrationPoints
-            self.nb_nodes_per_elem = self.conn.shape[1]
+        self.conn = f1.conn
+        self.nb_elem = self.conn.shape[0]
+        self.NbIntegrationPoints=f1.NbIntegrationPoints
+        self.nb_nodes_per_elem = self.conn.shape[1]
+        self.dim_field = 1
+
+        if isinstance(f1, N):
+            
             self.dim_field = f1.dim_field
 
             if self.support.spatial_dimension == 1 :
@@ -316,12 +319,19 @@ class GradientOperator(Operator):
                 self.nb_line = 3
 
             self.value_integration_points = np.zeros((self.nb_elem, self.NbIntegrationPoints, self.nb_line, self.nb_nodes_per_elem * self.dim_field))
+        
+        elif isinstance(f1, ShapeField):
+            
+            self.value_integration_points = np.zeros((self.nb_elem, self.NbIntegrationPoints, self.support.spatial_dimension, self.nb_nodes_per_elem * self.dim_field))
+            
+
         else : 
             raise NotImplementedError("gradient is implemented only for a shapefield")
-        
+          
+    
     def evalOnQuadraturePoints(self):
 
-        if isinstance(self.args[0], ShapeField):
+        if isinstance(self.args[0], N):
 
             B_without_dim_extension = np.zeros((self.nb_elem, self.NbIntegrationPoints,1, self.nb_nodes_per_elem*self.support.spatial_dimension))
             derivatives_shapes = self.support.fem.getShapesDerivatives(self.support.elem_type)
@@ -346,6 +356,16 @@ class GradientOperator(Operator):
                             self.value_integration_points[i,:,2,1::self.dim_field]=derivatives_shapes[i,:,0,:self.nb_nodes_per_elem]
                             self.value_integration_points[i,:,2,0::self.dim_field]=derivatives_shapes[i,:,0,self.nb_nodes_per_elem:]
         
+        elif isinstance(self.args[0], ShapeField):
+
+            B_without_dim_extension = np.zeros((self.nb_elem, self.NbIntegrationPoints,1,self.support.spatial_dimension * self.nb_nodes_per_elem))
+            derivatives_shapes = self.support.fem.getShapesDerivatives(self.support.elem_type)
+            derivatives_shapes = derivatives_shapes.reshape((B_without_dim_extension.shape))
+            
+            for i in range(self.support.spatial_dimension):
+                for j in range(self.dim_field):
+                    self.value_integration_points[:,:,i,j::self.dim_field]=derivatives_shapes[:,:,0,i*self.nb_nodes_per_elem:self.nb_nodes_per_elem*(i+1)]
+            
         return self.value_integration_points
     
     def getFieldDimension(self):
@@ -475,5 +495,5 @@ class Assembly:
                     V[:, gi] += V_locale[e,0,:,i]
 
         if support.spatial_dimension ==2 and field_dim==1:
-            V[-1,:]=V[-1,:]*(1/2)
+            V[-1,:]=V[-1,:]*(1/2)#problème
         return V
