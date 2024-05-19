@@ -293,10 +293,19 @@ class N(ShapeField):
         return self.value_integration_points
 
     def getFieldDimension(self):
-
         return np.prod(self.value_integration_points.shape[-2:])
 
+class ConstitutiveLaw(N):
+    def __init__(self,nb_element, D):
+        self.D = D
+        self.nb_elem = nb_element
+        self.value_integration_points = np.zeros((nb_element,1,3,3))#2D
 
+    def evalOnQuadraturePoints(self):
+        D = self.D.reshape((1,1,3,3))
+        self.value_integration_points = np.tile(D, (self.nb_elem, 1, 1, 1))
+        return self.value_integration_points
+    
 class GradientOperator(Operator):
     def __init__(self, f1):
         super().__init__(f1)

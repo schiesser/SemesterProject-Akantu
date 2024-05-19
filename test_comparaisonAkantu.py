@@ -28,7 +28,7 @@ Line Loop(5) = {1, 2, 3, 4};
 mesh_file += """
 Plane Surface(6) = {5};
 Physical Line("BlockY") = {1};
-Physical Line("BlockX") = {4};
+Physical Line("BlockX") = {1};
 Physical Line("Traction") = {3};
 Physical Surface("Mesh") = {6};
 """
@@ -60,6 +60,8 @@ material elastic [
 open('material.dat', 'w').write(material_file)
 material_file = 'material.dat'
 aka.parseInput(material_file)
+E   = 2.1e11   # young's modulus
+nu  = 0.3      # poisson's ratio
 
 ## Solid MechanicsModel
 model = aka.SolidMechanicsModel(mesh)
@@ -71,6 +73,47 @@ fem = model.getFEEngine()
 elem_type = aka._triangle_3
 ghost_type = aka.GhostType(1)
 Sup = Support(elem_filter, fem, spatial_dimension, elem_type, ghost_type)
+############################################
+tol =10e-6
+
+# Calcul depl. sans Akantu
+
+Ngroup = N(Sup, 2)
+B = GradientOperator(Ngroup)
+
+# D and reshape it to do the contraction
+D = E/(1-nu**2)*np.array([[1,nu,0],[nu,1,0],[0,0,(1-nu)/2]])
+number_elem = (Ngroup.nb_elem)
+D = ConstitutiveLaw(number_elem, D)
+
+BtDB = transpose(B)@D@B
+K_locales = FieldIntegrator.integrate(BtDB)
+
+K =Assembly.assemblyK(K_locales,Sup,2)
+
+# K reducted
+field_dim =2
+index = np.arange(0,nodes.shape[0]*field_dim)
+## nodes boundary condition
+index_nodes_boundary_condition_x = index[::field_dim][nodes[:,1]<tol]
+index_nodes_boundary_condition_y = index[1::field_dim][nodes[:,1]<tol]
+index_remove = np.sort(np.concatenate((index_nodes_boundary_condition_x, index_nodes_boundary_condition_y)))
+ddl = np.setdiff1d(index, index_remove)
+print(ddl)
+K_reduced = K[:,ddl]
+K_reduced = K_reduced[ddl,:]
+
+# force 
+f = np.zeros((K.shape[0]))
+index_f_y = index[1::field_dim][nodes[:,1]>1-tol]
+f[index_f_y]=100
+b = f[ddl]
+
+#linear system
+x=np.zeros(index.shape)
+x[ddl] = np.linalg.solve(K_reduced, b)
+print(x)
+
 ############################################
 # Calcul deplacement avec Akantu
 
