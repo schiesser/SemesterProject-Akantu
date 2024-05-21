@@ -75,7 +75,7 @@ ghost_type = aka.GhostType(1)
 Sup = Support(elem_filter, fem, spatial_dimension, elem_type, ghost_type)
 ############################################
 tol =10e-6
-print(Sup.fem.getShapesDerivatives(Sup.elem_type))
+
 # Calcul depl. avec operateur diff. :
 
 Ngroup = N(Sup, 2)
