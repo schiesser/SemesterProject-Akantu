@@ -373,7 +373,7 @@ class GradientOperator(Operator):
             
             for i in range(self.support.spatial_dimension):
                 for j in range(self.dim_field):
-                    self.value_integration_points[:,:,i,j::self.dim_field]=derivatives_shapes[:,:,0,i*self.nb_nodes_per_elem:self.nb_nodes_per_elem*(i+1)]
+                    self.value_integration_points[:,:,i,j::self.dim_field]=derivatives_shapes[:,:,0,i::self.support.spatial_dimension]
             
         return self.value_integration_points
     
