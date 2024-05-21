@@ -354,16 +354,16 @@ class GradientOperator(Operator):
                 for i in range(self.nb_elem):
                     for j in range(self.dim_field):
                         if self.dim_field == 1: # ce cas est problématique lors de la contraction !
-                            self.value_integration_points[i,:,0,0::self.dim_field]=derivatives_shapes[i,:,0,:self.nb_nodes_per_elem]
-                            self.value_integration_points[i,:,1,0::self.dim_field]=derivatives_shapes[i,:,0,self.nb_nodes_per_elem:]
-                            self.value_integration_points[i,:,2,0::self.dim_field]+=derivatives_shapes[i,:,0,:self.nb_nodes_per_elem]
-                            self.value_integration_points[i,:,2,0::self.dim_field]+=derivatives_shapes[i,:,0,self.nb_nodes_per_elem:]
+                            self.value_integration_points[i,:,0,0::self.dim_field]=derivatives_shapes[i,:,0,::self.dim_field]
+                            self.value_integration_points[i,:,1,0::self.dim_field]=derivatives_shapes[i,:,0,1::self.dim_field]
+                            self.value_integration_points[i,:,2,0::self.dim_field]+=derivatives_shapes[i,:,0,::self.dim_field]
+                            self.value_integration_points[i,:,2,0::self.dim_field]+=derivatives_shapes[i,:,0,1::self.dim_field]
                         
                         if self.dim_field == 2:
-                            self.value_integration_points[i,:,0,0::self.dim_field]=derivatives_shapes[i,:,0,:self.nb_nodes_per_elem]
-                            self.value_integration_points[i,:,1,1::self.dim_field]=derivatives_shapes[i,:,0,self.nb_nodes_per_elem:]
-                            self.value_integration_points[i,:,2,1::self.dim_field]=derivatives_shapes[i,:,0,:self.nb_nodes_per_elem]
-                            self.value_integration_points[i,:,2,0::self.dim_field]=derivatives_shapes[i,:,0,self.nb_nodes_per_elem:]
+                            self.value_integration_points[i,:,0,0::self.dim_field]=derivatives_shapes[i,:,0,::self.dim_field]
+                            self.value_integration_points[i,:,1,1::self.dim_field]=derivatives_shapes[i,:,0,1::self.dim_field]
+                            self.value_integration_points[i,:,2,1::self.dim_field]=derivatives_shapes[i,:,0,::self.dim_field]
+                            self.value_integration_points[i,:,2,0::self.dim_field]=derivatives_shapes[i,:,0,1::self.dim_field]
         
         elif isinstance(self.args[0], ShapeField):
 

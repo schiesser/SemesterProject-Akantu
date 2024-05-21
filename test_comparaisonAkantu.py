@@ -75,8 +75,8 @@ ghost_type = aka.GhostType(1)
 Sup = Support(elem_filter, fem, spatial_dimension, elem_type, ghost_type)
 ############################################
 tol =10e-6
-
-# Calcul depl. sans Akantu
+print(Sup.fem.getShapesDerivatives(Sup.elem_type))
+# Calcul depl. avec operateur diff. :
 
 Ngroup = N(Sup, 2)
 B = GradientOperator(Ngroup)
@@ -99,20 +99,25 @@ index_nodes_boundary_condition_x = index[::field_dim][nodes[:,1]<tol]
 index_nodes_boundary_condition_y = index[1::field_dim][nodes[:,1]<tol]
 index_remove = np.sort(np.concatenate((index_nodes_boundary_condition_x, index_nodes_boundary_condition_y)))
 ddl = np.setdiff1d(index, index_remove)
-print(ddl)
+
 K_reduced = K[:,ddl]
 K_reduced = K_reduced[ddl,:]
 
 # force 
 f = np.zeros((K.shape[0]))
 index_f_y = index[1::field_dim][nodes[:,1]>1-tol]
-f[index_f_y]=100
+f[index_f_y]=5000
 b = f[ddl]
+print("nodes :")
+print(nodes)
+print("external force: ")
+print(f.reshape(nodes.shape))
 
 #linear system
 x=np.zeros(index.shape)
 x[ddl] = np.linalg.solve(K_reduced, b)
-print(x)
+print("displacement :")
+print(x.reshape(nodes.shape))
 
 ############################################
 # Calcul deplacement avec Akantu
@@ -124,9 +129,17 @@ model.applyBC(aka.FixedValue(0.0, aka._y), "BlockY")
 # set the force/Neumann boundary conditions
 model.getExternalForce()[:] = 0.0
 
-trac = [1.0, 1.0] # Newtons/m^2
+trac = [0.0, 10000] # Newtons/m^2
 
 model.applyBC(aka.FromTraction(trac), "Traction")
+
+blocked_dofs = model.getBlockedDOFs()
+fext = model.getExternalForce()
+
+print("blocked ddl :")
+print(blocked_dofs)
+print("external force")
+print(fext)
 
 # configure the linear algebra solver
 solver = model.getNonLinearSolver()
