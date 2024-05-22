@@ -3,6 +3,7 @@ import akantu as aka
 from variationnal_operator_function import *
 import matplotlib.tri as tri
 import matplotlib.pyplot as plt
+from plot import *
 
 print(aka.__file__)
 print(aka.__version__)
@@ -29,7 +30,8 @@ Plane Surface(6) = {5};
 """
 
 open("triangle.geo", 'w').write(mesh_file)
-
+#.msh
+nodes, conn = meshGeo("triangle.geo", dim =2, order=1, element_type='triangle')
 # reading the mesh
 spatial_dimension = 2
 mesh_file = 'triangle.msh'
@@ -38,9 +40,7 @@ mesh.read(mesh_file)
 
 conn = mesh.getConnectivity(aka._triangle_3)
 nodes = mesh.getNodes()
-triangles = tri.Triangulation(nodes[:, 0], nodes[:, 1], conn)
-t=plt.triplot(triangles, '--', lw=.8)
-plt.savefig('MeshElementTriangle.png')
+plotMesht3(nodes, conn)
 
 ##Support declaration
 

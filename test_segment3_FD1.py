@@ -18,7 +18,7 @@ Line(1) = {1, 2};
 
 open("segment3.geo", 'w').write(mesh_file)
 points, conn = meshGeo('segment3.geo', dim=1, order=2, element_type='line3')
-plotMeshs3(points, conn)
+plotMeshs2(points, conn)
 
 # Lecture du maillage
 spatial_dimension = 1    

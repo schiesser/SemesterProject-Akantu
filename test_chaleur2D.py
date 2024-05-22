@@ -1,7 +1,6 @@
 import numpy as np
 import akantu as aka
 from variationnal_operator_function import *
-import matplotlib.tri as tri
 import matplotlib.pyplot as plt
 from plot import *
 
@@ -11,10 +10,10 @@ print(aka.__version__)
 ## Mesh generation
 
 mesh_file = """
-Point(1) = {0, 0, 0, 0.25};
-Point(2) = {1, 0, 0, 0.25};
-Point(3) = {1, 1, 0, 0.25};
-Point(4) = {0, 1, 0, 0.25};
+Point(1) = {0, 0, 0, 0.1};
+Point(2) = {1, 0, 0, 0.1};
+Point(3) = {1, 1, 0, 0.1};
+Point(4) = {0, 1, 0, 0.1};
 """
 mesh_file += """
 Line(1) = {1, 2};
@@ -41,9 +40,7 @@ mesh.read(mesh_file)
 
 conn = mesh.getConnectivity(aka._triangle_3)
 nodes = mesh.getNodes()
-triangles = tri.Triangulation(nodes[:, 0], nodes[:, 1], conn)
-t=plt.triplot(triangles, '--', lw=.8)
-plt.savefig('MeshElementTriangle.png')
+plotMesht3(nodes, conn)
 
 ##Support declaration
 
@@ -71,6 +68,7 @@ K = Assembly.assemblyK(res_int,Sup,1)
 tol =10e-6
 
 index = np.arange(0,nodes.shape[0])
+x=np.zeros(index.shape)
 
 nodes_t0 = index[nodes[:,0]<tol]
 nodes_t1 = index[nodes[:,0]>1-tol]
@@ -80,6 +78,8 @@ index_to_keep = np.setdiff1d(index, index_remove) #déjà dans le bonne ordre !
 
 t0 = 20
 t1 = 10
+x[nodes_t0]=t0
+x[nodes_t1]=t1
 comp_t0 = np.sum(K[:,nodes_t0], axis = 1)*t0
 comp_t1 = np.sum(K[:,nodes_t1], axis = 1)*t1
 b = -comp_t0-comp_t1
@@ -87,10 +87,9 @@ b_f = b[index_to_keep]
 A = K[:,index_to_keep]
 A = A[index_to_keep,:]
 
-x = np.linalg.solve(A, b_f)
+x[index_to_keep] = np.linalg.solve(A, b_f)
 
-print(x)
-plt.scatter(nodes[:,0][index_to_keep],nodes[:,1][index_to_keep], c=x, cmap='viridis', s=40)
+plt.scatter(nodes[:,0],nodes[:,1], c=x, cmap='viridis', s=40)
 plt.colorbar(label='Temperature')
 
 plt.title('Temperature value at each node')

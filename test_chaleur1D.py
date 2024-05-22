@@ -51,6 +51,7 @@ K = Assembly.assemblyK(res_int,Sup,1)
 tol =10e-6
 
 index = np.arange(0,points.shape[0])
+x=np.zeros(index.shape)
 
 nodes_t0 = index[points[:,0]<tol]
 nodes_t1 = index[points[:,0]>1-tol]
@@ -60,6 +61,8 @@ index_to_keep = np.setdiff1d(index, index_remove) #déjà dans le bonne ordre !
 
 t0 = 20
 t1 = 10
+x[nodes_t0]=t0
+x[nodes_t1]=t1
 
 comp_t0 = np.sum(K[:,nodes_t0], axis = 1)*t0
 comp_t1 = np.sum(K[:,nodes_t1], axis = 1)*t1
@@ -68,9 +71,9 @@ b_f = b[index_to_keep]
 A = K[:,index_to_keep]
 A = A[index_to_keep,:]
 
-x = np.linalg.solve(A, b_f)
-print(x)
-plt.scatter(points[:,0][index_to_keep],np.zeros_like(points[:,0][index_to_keep]), c=x, cmap='viridis', s=40)
+x[index_to_keep] = np.linalg.solve(A, b_f)
+
+plt.scatter(points[:,0],points[:,1], c=x, cmap='viridis', s=40)
 plt.colorbar(label='temperature')
 plt.title('Temperature value at each node')
 plt.savefig("chaleur1D.png")

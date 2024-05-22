@@ -41,9 +41,7 @@ mesh.read(mesh_file)
 
 conn = mesh.getConnectivity(aka._triangle_3)
 nodes = mesh.getNodes()
-triangles = tri.Triangulation(nodes[:, 0], nodes[:, 1], conn)
-t=plt.triplot(triangles, '--', lw=.8)
-plt.savefig('MeshElementTriangle.png')
+plotMesht3(nodes, conn)
 
 ##Support declaration
 
