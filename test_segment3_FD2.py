@@ -65,8 +65,8 @@ print(AssembledIntN)
 # True result :
 expected_result_integration_N = np.array([[1/12, 0, 1/12,0, 1/6,0, 1/3,0, 1/3,0],[0,1/12,0, 1/12,0, 1/6,0, 1/3,0, 1/3]])
 # control of the computed integration of N :
-error = np.abs(AssembledIntN-expected_result_integration_N)
-assert np.all(error<tol), "integration of N isn't correct"
+np.testing.assert_allclose(AssembledIntN, expected_result_integration_N, atol=tol, err_msg="integration of N isn't correct")
+
 
 ## Gradient de N :
 Bgroup = GradientOperator(Ngroup)
@@ -90,8 +90,8 @@ print(AssembledIntB)
 # True result :
 expected_result_integration_gradN = np.array([[-1.0,0, 1.0,0, 0,0, 0,0, 0,0],[0,-1.0,0, 1.0,0, 0,0, 0,0, 0]])
 # control of the computed integration of grad(N) :
-error = np.abs(AssembledIntB - expected_result_integration_gradN)
-assert np.all(error<tol), "integration of grad(N) isn't correct"
+np.testing.assert_allclose(AssembledIntB, expected_result_integration_gradN, atol=tol, err_msg="integration of grad(N) isn't correct")
+
 
 ## Test opération Transpose(B)@B :
 BtB = transpose(Bgroup)@Bgroup
@@ -117,6 +117,5 @@ print("avec shape :")
 print(Kglobale.shape)
 # True result :
 expected_result_K = arr = np.array([[14/3, 0, 0, 0, 2/3, 0, -16/3, 0, 0, 0],[0, 14/3, 0, 0, 0, 2/3, 0, -16/3, 0, 0],[0, 0, 14/3, 0, 2/3, 0, 0, 0, -16/3, 0],[0, 0, 0, 14/3, 0, 2/3, 0, 0, 0, -16/3],[2/3, 0, 2/3, 0, 28/3, 0, -16/3, 0, -16/3, 0],[0, 2/3, 0, 2/3, 0, 28/3, 0, -16/3, 0, -16/3],[-16/3, 0, 0, 0, -16/3, 0, 32/3, 0, 0, 0],[0, -16/3, 0, 0, 0, -16/3, 0, 32/3, 0, 0],[0, 0, -16/3, 0, -16/3, 0, 0, 0, 32/3, 0],[0, 0, 0, -16/3, 0, -16/3, 0, 0, 0, 32/3]])
-# control of the computed integration of grad(N) :
-error = np.abs(Kglobale-expected_result_K)
-assert np.all(error<tol), "Gloable Stiffness matrix isn't correct"
+# control of the computed stiffness global matrix :
+np.testing.assert_allclose(Kglobale, expected_result_K, atol=tol, err_msg="Gloable Stiffness matrix isn't correct")

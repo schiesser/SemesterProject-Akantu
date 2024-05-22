@@ -84,8 +84,8 @@ print(AssembledIntN)
 # True result :
 expected_result_integration_N = np.array([[1/12, 1/12, 1/12, 1/12, 1/6]])
 # control of the computed integration of N :
-error = np.abs(AssembledIntN-expected_result_integration_N)
-assert error.all()<tol, "integration of N isn't correct"
+np.testing.assert_allclose(AssembledIntN, expected_result_integration_N, atol=tol, err_msg="integration of N isn't correct")
+
 
 ## Gradient de N :
 Bgroup = GradientOperator(Ngroup)
@@ -110,8 +110,8 @@ print(AssembledIntB.shape)
 # True result :
 expected_result_integration_gradN = np.array([[-1/8, 1/8, 1/8, -1/8, 0],[3/8, 1/8, -3/8, -1/8, 0],[1/4, 1/4, 1/4, 1/4, 0]])
 # control of the computed integration of grad(N) :
-error = np.abs(AssembledIntB - expected_result_integration_gradN)
-assert error.all()<tol, "integration of grad(N) isn't correct"
+np.testing.assert_allclose(AssembledIntB, expected_result_integration_gradN, atol=tol, err_msg="integration of grad(N) isn't correct")
+
 
 ## Test opération Transpose(B)@B :
 BtB = transpose(Bgroup)@Bgroup
@@ -137,6 +137,5 @@ print("avec shape :")
 print(Kglobale.shape)
 # True result :
 expected_result_K = np.array([[2.75, 0.75, 0.25, 0.125, 0, 0, -0.75, -1, -1, -1.25],[0.75, 2.75, 0, 0.25, 0, 0, -0.125, -0.75, -0.5, -1],[0.25, 0, 0.75, 0.25, -0.75, -0.125, 0, 0, 0.25, 0.25],[0.125, 0.25, 0.25, 0.75, -1, -0.75, 0, 0, -0.25, 0.25],[0, 0, -0.75, -1, 2.75, 0.75, 0.25, 0.125, -1, -1.25],[0, 0, -0.125, -0.75, 0.75, 2.75, 0, 0.25, -0.5, -1],[-0.75, -0.125, 0, 0, 0.25, 0, 0.75, 0.25, 0.25, 0.25],[-1, -0.75, 0, 0, 0.125, 0.25, 0.25, 0.75, -0.25, 0.25],[-1, -0.5, 0.25, -0.25, -1, -0.5, 0.25, -0.25, 3, 1],[-1.25, -1, 0.25, 0.25, -1.25, -1, 0.25, 0.25, 1, 3]])
-# control of the computed integration of grad(N) :
-error = np.abs(Kglobale-expected_result_K)
-assert error.all()<tol, "Gloable Stiffness matrix isn't correct"
+# control of the computed stiffness global matrix :
+np.testing.assert_allclose(Kglobale, expected_result_K, atol=tol, err_msg="Gloable Stiffness matrix isn't correct")
