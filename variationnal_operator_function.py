@@ -295,11 +295,16 @@ class N(ShapeField):
     def getFieldDimension(self):
         return np.prod(self.value_integration_points.shape[-2:])
 
-class ConstitutiveLaw(N):
-    def __init__(self,nb_element, D):
+class ConstitutiveLaw(ShapeField):
+    def __init__(self, D, support):
+        super().__init__(support)
         self.D = D
-        self.nb_elem = nb_element
-        self.value_integration_points = np.zeros((nb_element,1,3,3))#2D
+
+        if self.support.spatial_dimension == 2 :
+            self.value_integration_points = np.zeros((self.nb_elem,1,3,3))
+        
+        elif self.support.spatial_dimension == 1 :
+            raise NotImplementedError
 
     def evalOnQuadraturePoints(self):
         D = self.D.reshape((1,1,3,3))
