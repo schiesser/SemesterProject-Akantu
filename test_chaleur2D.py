@@ -56,15 +56,11 @@ Sup = Support(elem_filter, fem, spatial_dimension, elem_type, ghost_type)
 shapef = ShapeField(Sup)
 gradient = GradientOperator(shapef)
 
-grad = gradient.evalOnQuadraturePoints()
-
-dk = transpose(gradient)@gradient
-toint=dk.evalOnQuadraturePoints()
-
-res_int=FieldIntegrator.integrate(dk)
-
+# K :
+res_int=FieldIntegrator.integrate(transpose(gradient)@gradient)
 K = Assembly.assemblyK(res_int,Sup,1)
 
+# for boundary conditions :
 tol =10e-6
 
 index = np.arange(0,nodes.shape[0])
