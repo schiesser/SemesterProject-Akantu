@@ -85,7 +85,7 @@ Ngroup = N(Sup, field_dim)
 B = GradientOperator(Ngroup)
 
 # Constitutive law
-MatrixD = E/(1-nu**2)*np.array([[1,nu,0],[nu,1,0],[0,0,(1-nu)/2]])
+MatrixD = E/((1+nu)*(1-2*nu))*np.array([[1-nu,nu,0],[nu,1-nu,0],[0,0,(1-2*nu)/2]])
 D = ConstitutiveLaw(MatrixD, Sup)
 
 # K (without boundary conditions)
@@ -121,7 +121,8 @@ x=np.zeros(index.shape)
 x[ddl] = np.linalg.solve(K_reduced, b)
 
 print("displacement :")
-print(x.reshape(nodes.shape))
+u1 = x.reshape(nodes.shape)
+print(u1)
 
 ############################################
 # Computation of displacement using Akantu
@@ -156,5 +157,7 @@ solver.set("convergence_type", aka.SolveConvergenceCriteria.residual)
 model.solveStep()
 
 # extract the displacements
-u = model.getDisplacement()
-print(u)
+u2 = model.getDisplacement()
+print(u2)
+
+np.testing.assert_allclose(u1, u2, atol=tol, err_msg="Problme in patch test")
