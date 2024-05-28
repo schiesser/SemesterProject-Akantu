@@ -98,7 +98,7 @@ class transpose(Operator):
     # transpose les 2 dernières dimensions de l'array : "value_integration_point"; pensé pour les type GradientOperator ou N. 
     def __init__(self,f):
 
-        if not isinstance(f, (GradientOperator, N)):
+        if not isinstance(f, (GradientOperator, N, RotationalOperator)):
             raise TypeError("Be careful if you want to transpose an object different from grad(N) or N. It transposes the last 2 dimensions of an array. Other possibility : use Contraction class with particular subscripts: it uses einsum form numpy.")
         
         super().__init__(f)
@@ -277,8 +277,6 @@ class N(ShapeField):
     def __init__(self, support, dim_field):
         super().__init__(support)
         self.dim_field = dim_field
-        # array qui contient tous les N est de dimension :
-        # (nombre éléments, nombre points Gauss, dimension du champ, noeuds par élément x dimension du champ)
         self.value_integration_points = np.zeros((self.nb_elem, self.NbIntegrationPoints, self.dim_field, self.nb_nodes_per_elem * self.dim_field))
     
     def evalOnQuadraturePoints(self):
@@ -296,7 +294,7 @@ class N(ShapeField):
         return np.prod(self.value_integration_points.shape[-2:])
 
 class ConstitutiveLaw(ShapeField):
-    def __init__(self, D, support):
+    def __init__(self, D, support): 
         super().__init__(support)
         self.D = D
 
@@ -356,19 +354,17 @@ class GradientOperator(Operator):
                     self.value_integration_points[:,:,i::self.dim_field,i::self.dim_field]=derivatives_shapes
 
             elif self.support.spatial_dimension == 2:
-                for i in range(self.nb_elem):
-                    for j in range(self.dim_field):
-                        if self.dim_field == 1: # ce cas est problématique lors de la contraction !
-                            self.value_integration_points[i,:,0,0::self.dim_field]=derivatives_shapes[i,:,0,::self.dim_field]
-                            self.value_integration_points[i,:,1,0::self.dim_field]=derivatives_shapes[i,:,0,1::self.dim_field]
-                            self.value_integration_points[i,:,2,0::self.dim_field]+=derivatives_shapes[i,:,0,::self.dim_field]
-                            self.value_integration_points[i,:,2,0::self.dim_field]+=derivatives_shapes[i,:,0,1::self.dim_field]
+                if self.dim_field == 1: # ce cas est problématique lors de la contraction !
+                    self.value_integration_points[:,:,0,0::self.dim_field]=derivatives_shapes[:,:,0,::self.support.spatial_dimension]
+                    self.value_integration_points[:,:,1,0::self.dim_field]=derivatives_shapes[:,:,0,1::self.support.spatial_dimension]
+                    self.value_integration_points[:,:,2,0::self.dim_field]+=derivatives_shapes[:,:,0,::self.support.spatial_dimension]
+                    self.value_integration_points[:,:,2,0::self.dim_field]+=derivatives_shapes[:,:,0,1::self.support.spatial_dimension]
                         
-                        if self.dim_field == 2:
-                            self.value_integration_points[i,:,0,0::self.dim_field]=derivatives_shapes[i,:,0,::self.dim_field]
-                            self.value_integration_points[i,:,1,1::self.dim_field]=derivatives_shapes[i,:,0,1::self.dim_field]
-                            self.value_integration_points[i,:,2,1::self.dim_field]=derivatives_shapes[i,:,0,::self.dim_field]
-                            self.value_integration_points[i,:,2,0::self.dim_field]=derivatives_shapes[i,:,0,1::self.dim_field]
+                if self.dim_field == 2:
+                    self.value_integration_points[:,:,0,0::self.dim_field]=derivatives_shapes[:,:,0,::self.support.spatial_dimension]
+                    self.value_integration_points[:,:,1,1::self.dim_field]=derivatives_shapes[:,:,0,1::self.support.spatial_dimension]
+                    self.value_integration_points[:,:,2,1::self.dim_field]=derivatives_shapes[:,:,0,::self.support.spatial_dimension]
+                    self.value_integration_points[:,:,2,0::self.dim_field]=derivatives_shapes[:,:,0,1::self.support.spatial_dimension]
         
         elif isinstance(self.args[0], ShapeField):
 
@@ -386,7 +382,48 @@ class GradientOperator(Operator):
 
         return np.prod(self.value_integration_points.shape[-2:])
     
+class RotationalOperator(Operator):
+    def __init__(self, f1):
+        super().__init__(f1)
+        self.name = "Rot(" + f1.name + ")"
 
+        self.conn = f1.conn
+        self.nb_elem = self.conn.shape[0]
+        self.NbIntegrationPoints = f1.NbIntegrationPoints
+        self.nb_nodes_per_elem = self.conn.shape[1]
+        self.dim_field = 3
+
+        if isinstance(f1, ShapeField):
+
+            self.value_integration_points = np.zeros((self.nb_elem, self.NbIntegrationPoints, self.support.spatial_dimension, self.nb_nodes_per_elem * self.dim_field))
+
+        else : 
+            raise NotImplementedError("gradient is implemented only for a shapefield")
+          
+    
+    def evalOnQuadraturePoints(self):
+
+        B_without_dim_extension = np.zeros((self.nb_elem, self.NbIntegrationPoints,1,self.support.spatial_dimension * self.nb_nodes_per_elem))
+        derivatives_shapes = self.support.fem.getShapesDerivatives(self.support.elem_type)
+        derivatives_shapes = derivatives_shapes.reshape((B_without_dim_extension.shape))
+
+        #line 1   
+        self.value_integration_points[:,:,0,2::self.dim_field]=derivatives_shapes[:,:,0,1::self.support.spatial_dimension]
+        self.value_integration_points[:,:,0,1::self.dim_field]=(-1)*derivatives_shapes[:,:,0,2::self.support.spatial_dimension]
+        #line 2
+        self.value_integration_points[:,:,1,0::self.dim_field]=derivatives_shapes[:,:,0,2::self.support.spatial_dimension]
+        self.value_integration_points[:,:,1,2::self.dim_field]=(-1)*derivatives_shapes[:,:,0,0::self.support.spatial_dimension]
+        #line 3
+        self.value_integration_points[:,:,2,1::self.dim_field]=derivatives_shapes[:,:,0,0::self.support.spatial_dimension]
+        self.value_integration_points[:,:,2,0::self.dim_field]=(-1)*derivatives_shapes[:,:,0,1::self.support.spatial_dimension]
+        
+        return self.value_integration_points
+        
+    
+    def getFieldDimension(self):
+
+        raise np.prod(self.value_integration_points.shape[-2:])
+    
 class FieldIntegrator:
     @staticmethod
     def integrate(field):
