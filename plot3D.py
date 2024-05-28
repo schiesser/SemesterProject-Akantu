@@ -23,14 +23,12 @@ def readMesh(filename, element_type):
     return mesh.points[:, :2], mesh.cells_dict[element_type]
 
 def plotMeshtetra(nodes, conn):
-    # Increase the size of the figure
-    fig = plt.figure(figsize=(10, 10))  # Adjust the figure size as needed
+    
+    fig = plt.figure(figsize=(20, 20))
     ax = fig.add_subplot(111, projection='3d')
     
-    # Create a list to hold the edges of the tetrahedra
     edges = []
     for tetra in conn:
-        # Define the edges of the tetrahedron
         edges.extend([
             [nodes[tetra[0]], nodes[tetra[1]]],
             [nodes[tetra[0]], nodes[tetra[2]]],
@@ -40,12 +38,10 @@ def plotMeshtetra(nodes, conn):
             [nodes[tetra[2]], nodes[tetra[3]]]
         ])
     
-    # Create a Line3DCollection from the tetrahedron edges
     edge_collection = Line3DCollection(edges, colors='k', linestyles='--', linewidths=0.8)
     ax.add_collection3d(edge_collection)
     
-    # Plot the nodes with a smaller size
-    ax.scatter(nodes[:, 0], nodes[:, 1], nodes[:, 2], color='black', s=10)  # 's' parameter adjusts the size of the points
+    ax.scatter(nodes[:, 0], nodes[:, 1], nodes[:, 2], color='black', s=10)
     
     # Set the labels
     ax.set_xlabel('X')

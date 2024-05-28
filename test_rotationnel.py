@@ -10,14 +10,14 @@ print(aka.__version__)
 ## Mesh generation
 
 mesh_file = """
-Point(1) = {0, 0, 0, 0.2};
-Point(2) = {1, 0, 0, 0.2};
-Point(3) = {1, 1, 0, 0.2};
-Point(4) = {0, 1, 0, 0.2};
-Point(5) = {0, 0, 10, 0.2};
-Point(6) = {1, 0, 10, 0.2};
-Point(7) = {1, 1, 10, 0.2};
-Point(8) = {0, 1, 10, 0.2};
+Point(1) = {0, 0, 0, 0.15};
+Point(2) = {1, 0, 0, 0.15};
+Point(3) = {1, 1, 0, 0.15};
+Point(4) = {0, 1, 0, 0.15};
+Point(5) = {0, 0, 10, 0.15};
+Point(6) = {1, 0, 10, 0.15};
+Point(7) = {1, 1, 10, 0.15};
+Point(8) = {0, 1, 10, 0.15};
 
 Line(1) = {1, 2};
 Line(2) = {2, 3};
@@ -87,33 +87,29 @@ rot = RotationalOperator(shapef)
 
 res_int=FieldIntegrator.integrate(transpose(rot)@rot)
 K = Assembly.assemblyK(res_int,Sup,3)
-print(K.shape)
 
 # for boundary conditions :
 tol =10e-6
 
 index = np.arange(0,nodes.shape[0])
 x=np.zeros(index.shape[0]*3)
-print(x.shape)
-
+#print(K.shape)
 mask_a0x = (nodes[:, 2] < tol)
+#print(mask_a0x.shape)
+#print(nodes.shape)
 nodes_a0x = index[mask_a0x] * spatial_dimension
-
-#nodes_a0x = index[nodes[:,2]<tol][nodes[:,0]<0.5]*spatial_dimension
-#nodes_a1x = index[nodes[:,2]<tol][nodes[:,0]>=0.5]*spatial_dimension
+#print(nodes_a0x.shape)
 nodes_a0y = nodes_a0x+1
 nodes_a0z = nodes_a0y+1
 
 index_tot = np.concatenate((index*spatial_dimension, (index*spatial_dimension+1), (index*spatial_dimension+2)))
-index_remove0 = np.concatenate((nodes_a0x,nodes_a0y))
-index_remove1 = nodes_a0z
-index_to_keep = np.setdiff1d(index_tot, index_remove1) #déjà dans le bonne ordre !
-index_to_keep = np.setdiff1d(index_to_keep,index_remove0) #déjà dans le bonne ordre !
+index_remove0 = np.concatenate((nodes_a0x,nodes_a0y,nodes_a0z))
+index_to_keep = np.setdiff1d(index_tot,index_remove0) #déjà dans le bonne ordre !
+#print(index_to_keep.shape)
+#print(index_remove0.shape)
 
-a0 = 10
-a1 = 0
+a0 = 20
 x[index_remove0]=a0
-x[index_remove1]=a1
 comp_t0 = np.sum(K[:,index_remove0], axis = 1)*a0
 
 b = -comp_t0
@@ -127,19 +123,17 @@ x=x.reshape(nodes.shape)
 points=nodes[nodes[:,1]<tol]
 res = x[nodes[:,1]<tol]
 plt.figure()
-plt.scatter(points[:,0],points[:,2], c=res[:,0], cmap='viridis', s=40)
-plt.colorbar(label='A?')
-plt.title('rote')
-plt.savefig("test_rot1.png")
+plt.scatter(points[:,0],points[:,2], c=res[:,0], cmap='viridis', s=30)
+plt.colorbar(label='A')
+plt.title('component X')
+plt.savefig("test_rotX.png")
 plt.figure()
-plt.scatter(points[:,0],points[:,2], c=res[:,1], cmap='viridis', s=40)
-plt.colorbar(label='A?')
-plt.title('rote')
-plt.savefig("test_rot2.png")
+plt.scatter(points[:,0],points[:,2], c=res[:,1], cmap='viridis', s=30)
+plt.colorbar(label='A')
+plt.title('component Y')
+plt.savefig("test_rotY.png")
 plt.figure()
-plt.scatter(points[:,0],points[:,2], c=res[:,2], cmap='viridis', s=40)
-plt.colorbar(label='A?')
-plt.title('rote')
-plt.savefig("test_rot2.png")
-
-print(res[:,0][points[:, 0] < tol])
+plt.scatter(points[:,0],points[:,2], c=res[:,2], cmap='viridis', s=30)
+plt.colorbar(label='A')
+plt.title('component Z')
+plt.savefig("test_rotZ.png")
