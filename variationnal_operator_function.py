@@ -14,7 +14,6 @@ class TensorField:
     def __init__(self, name, support):
         self.name = name
         self.support = support
-        self.value_integration_points = None
 
     def evalOnQuadraturePoints(self):
         pass
@@ -254,8 +253,9 @@ class Contraction(Operator):
 
 
 class ShapeField(TensorField):
-    def __init__(self, support):
+    def __init__(self, support, dim_field):
         super().__init__("shape_function", support)
+        self.dim_field = dim_field
         self.NbIntegrationPoints=support.fem.getNbIntegrationPoints(support.elem_type)
         self.conn = support.fem.getMesh().getConnectivities()(support.elem_type)
         self.nb_elem = self.conn.shape[0]
@@ -275,8 +275,7 @@ class ShapeField(TensorField):
     
 class N(ShapeField):
     def __init__(self, support, dim_field):
-        super().__init__(support)
-        self.dim_field = dim_field
+        super().__init__(support,dim_field)
         self.value_integration_points = np.zeros((self.nb_elem, self.NbIntegrationPoints, self.dim_field, self.nb_nodes_per_elem * self.dim_field))
     
     def evalOnQuadraturePoints(self):
@@ -295,7 +294,7 @@ class N(ShapeField):
 
 class ConstitutiveLaw(ShapeField):
     def __init__(self, D, support): 
-        super().__init__(support)
+        super().__init__(support, dim_field = None)
         self.D = D
 
         if self.support.spatial_dimension == 2 :
@@ -319,24 +318,22 @@ class GradientOperator(Operator):
         self.nb_elem = self.conn.shape[0]
         self.NbIntegrationPoints=f1.NbIntegrationPoints
         self.nb_nodes_per_elem = self.conn.shape[1]
-        self.dim_field = 1
 
         if isinstance(f1, N):
             
-            self.dim_field = f1.dim_field
+            dim_field = f1.dim_field
 
             if self.support.spatial_dimension == 1 :
-                self.nb_line = 1 *self.dim_field
+                nb_line = 1 *dim_field
 
             elif self.support.spatial_dimension == 2 :
-                self.nb_line = 3
+                nb_line = 3
 
-            self.value_integration_points = np.zeros((self.nb_elem, self.NbIntegrationPoints, self.nb_line, self.nb_nodes_per_elem * self.dim_field))
+            self.value_integration_points = np.zeros((self.nb_elem, self.NbIntegrationPoints, nb_line, self.nb_nodes_per_elem *dim_field))
         
         elif isinstance(f1, ShapeField):
-            
-            self.value_integration_points = np.zeros((self.nb_elem, self.NbIntegrationPoints, self.support.spatial_dimension, self.nb_nodes_per_elem * self.dim_field))
-            
+            dim_field = f1.dim_field
+            self.value_integration_points = np.zeros((self.nb_elem, self.NbIntegrationPoints, self.support.spatial_dimension, self.nb_nodes_per_elem * dim_field))
 
         else : 
             raise NotImplementedError("gradient is implemented only for a shapefield")
@@ -345,38 +342,39 @@ class GradientOperator(Operator):
     def evalOnQuadraturePoints(self):
 
         if isinstance(self.args[0], N):
-
+            
+            dim_field = self.args[0].dim_field
             B_without_dim_extension = np.zeros((self.nb_elem, self.NbIntegrationPoints,1, self.nb_nodes_per_elem*self.support.spatial_dimension))
             derivatives_shapes = self.support.fem.getShapesDerivatives(self.support.elem_type)
             derivatives_shapes = derivatives_shapes.reshape((B_without_dim_extension.shape))
 
             if self.support.spatial_dimension == 1:
-                for i in range(self.dim_field):
-                    self.value_integration_points[:,:,i::self.dim_field,i::self.dim_field]=derivatives_shapes
+                for i in range(dim_field):
+                    self.value_integration_points[:,:,i::dim_field,i::dim_field]=derivatives_shapes
 
             elif self.support.spatial_dimension == 2:
-                if self.dim_field == 1: # A contrôler !
-                    self.value_integration_points[:,:,0,0::self.dim_field]=derivatives_shapes[:,:,0,::self.support.spatial_dimension]
-                    self.value_integration_points[:,:,1,0::self.dim_field]=derivatives_shapes[:,:,0,1::self.support.spatial_dimension]
-                    self.value_integration_points[:,:,2,0::self.dim_field]+=derivatives_shapes[:,:,0,::self.support.spatial_dimension]
-                    self.value_integration_points[:,:,2,0::self.dim_field]+=derivatives_shapes[:,:,0,1::self.support.spatial_dimension]
+                if dim_field == 1: # A contrôler !
+                    self.value_integration_points[:,:,0,0::dim_field]=derivatives_shapes[:,:,0,::self.support.spatial_dimension]
+                    self.value_integration_points[:,:,1,0::dim_field]=derivatives_shapes[:,:,0,1::self.support.spatial_dimension]
+                    self.value_integration_points[:,:,2,0::dim_field]+=derivatives_shapes[:,:,0,::self.support.spatial_dimension]
+                    self.value_integration_points[:,:,2,0::dim_field]+=derivatives_shapes[:,:,0,1::self.support.spatial_dimension]
                         
-                if self.dim_field == 2:
-                    self.value_integration_points[:,:,0,0::self.dim_field]=derivatives_shapes[:,:,0,::self.support.spatial_dimension]
-                    self.value_integration_points[:,:,1,1::self.dim_field]=derivatives_shapes[:,:,0,1::self.support.spatial_dimension]
-                    self.value_integration_points[:,:,2,1::self.dim_field]=derivatives_shapes[:,:,0,::self.support.spatial_dimension]
-                    self.value_integration_points[:,:,2,0::self.dim_field]=derivatives_shapes[:,:,0,1::self.support.spatial_dimension]
+                if dim_field == 2:
+                    self.value_integration_points[:,:,0,0::dim_field]=derivatives_shapes[:,:,0,::self.support.spatial_dimension]
+                    self.value_integration_points[:,:,1,1::dim_field]=derivatives_shapes[:,:,0,1::self.support.spatial_dimension]
+                    self.value_integration_points[:,:,2,1::dim_field]=derivatives_shapes[:,:,0,::self.support.spatial_dimension]
+                    self.value_integration_points[:,:,2,0::dim_field]=derivatives_shapes[:,:,0,1::self.support.spatial_dimension]
         
         elif isinstance(self.args[0], ShapeField):
-
+            dim_field = self.args[0].dim_field
             B_without_dim_extension = np.zeros((self.nb_elem, self.NbIntegrationPoints,1,self.support.spatial_dimension * self.nb_nodes_per_elem))
             derivatives_shapes = self.support.fem.getShapesDerivatives(self.support.elem_type)
             derivatives_shapes = derivatives_shapes.reshape((B_without_dim_extension.shape))
             
             for i in range(self.support.spatial_dimension):
-                for j in range(self.dim_field):
-                    self.value_integration_points[:,:,i,j::self.dim_field]=derivatives_shapes[:,:,0,i::self.support.spatial_dimension]
-            
+                for j in range(dim_field):
+                    self.value_integration_points[:,:,i,j::dim_field]=derivatives_shapes[:,:,0,i::self.support.spatial_dimension]
+        
         return self.value_integration_points
     
     def getFieldDimension(self):
@@ -387,23 +385,22 @@ class RotationalOperator(Operator):
     def __init__(self, f1):
         super().__init__(f1)
         self.name = "Rot(" + f1.name + ")"
-
+        dim_field = f1.dim_field
         self.conn = f1.conn
         self.nb_elem = self.conn.shape[0]
         self.NbIntegrationPoints = f1.NbIntegrationPoints
         self.nb_nodes_per_elem = self.conn.shape[1]
-        self.dim_field = 3
 
         if isinstance(f1, ShapeField):
 
-            self.value_integration_points = np.zeros((self.nb_elem, self.NbIntegrationPoints, self.support.spatial_dimension, self.nb_nodes_per_elem * self.dim_field))
+            self.value_integration_points = np.zeros((self.nb_elem, self.NbIntegrationPoints, self.support.spatial_dimension, self.nb_nodes_per_elem * dim_field))
 
         else : 
             raise NotImplementedError("rotational is implemented only for a shapefield")
           
     
     def evalOnQuadraturePoints(self):
-
+        dim_field = self.args[0].dim_field
         B_without_dim_extension = np.zeros((self.nb_elem, self.NbIntegrationPoints,1,self.support.spatial_dimension * self.nb_nodes_per_elem))
         derivatives_shapes = self.support.fem.getShapesDerivatives(self.support.elem_type)
         derivatives_shapes = derivatives_shapes.reshape((B_without_dim_extension.shape))
@@ -411,14 +408,14 @@ class RotationalOperator(Operator):
 
         if self.support.spatial_dimension == 3:
             #line 1   
-            self.value_integration_points[:,:,0,2::self.dim_field]=derivatives_shapes[:,:,0,1::self.support.spatial_dimension]
-            self.value_integration_points[:,:,0,1::self.dim_field]=(-1)*derivatives_shapes[:,:,0,2::self.support.spatial_dimension]
+            self.value_integration_points[:,:,0,2::dim_field]=derivatives_shapes[:,:,0,1::self.support.spatial_dimension]
+            self.value_integration_points[:,:,0,1::dim_field]=(-1)*derivatives_shapes[:,:,0,2::self.support.spatial_dimension]
             #line 2
-            self.value_integration_points[:,:,1,0::self.dim_field]=derivatives_shapes[:,:,0,2::self.support.spatial_dimension]
-            self.value_integration_points[:,:,1,2::self.dim_field]=(-1)*derivatives_shapes[:,:,0,0::self.support.spatial_dimension]
+            self.value_integration_points[:,:,1,0::dim_field]=derivatives_shapes[:,:,0,2::self.support.spatial_dimension]
+            self.value_integration_points[:,:,1,2::dim_field]=(-1)*derivatives_shapes[:,:,0,0::self.support.spatial_dimension]
             #line 3
-            self.value_integration_points[:,:,2,1::self.dim_field]=derivatives_shapes[:,:,0,0::self.support.spatial_dimension]
-            self.value_integration_points[:,:,2,0::self.dim_field]=(-1)*derivatives_shapes[:,:,0,1::self.support.spatial_dimension]
+            self.value_integration_points[:,:,2,1::dim_field]=derivatives_shapes[:,:,0,0::self.support.spatial_dimension]
+            self.value_integration_points[:,:,2,0::dim_field]=(-1)*derivatives_shapes[:,:,0,1::self.support.spatial_dimension]
         else :
             raise NotImplementedError
         

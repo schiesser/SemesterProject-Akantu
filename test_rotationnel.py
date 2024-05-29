@@ -82,7 +82,8 @@ elem_type = aka._tetrahedron_4
 ghost_type = aka.GhostType(1) #peu importe pour le moment
 Sup = Support(elem_filter, fem, spatial_dimension, elem_type, ghost_type)
 ######################################################################
-shapef = ShapeField(Sup)
+field_dim = 3
+shapef = ShapeField(Sup, field_dim)
 rot = RotationalOperator(shapef)
 
 res_int=FieldIntegrator.integrate(transpose(rot)@rot)
@@ -93,20 +94,14 @@ tol =10e-6
 
 index = np.arange(0,nodes.shape[0])
 x=np.zeros(index.shape[0]*3)
-#print(K.shape)
 mask_a0x = (nodes[:, 2] < tol)
-#print(mask_a0x.shape)
-#print(nodes.shape)
 nodes_a0x = index[mask_a0x] * spatial_dimension
-#print(nodes_a0x.shape)
 nodes_a0y = nodes_a0x+1
 nodes_a0z = nodes_a0y+1
 
 index_tot = np.concatenate((index*spatial_dimension, (index*spatial_dimension+1), (index*spatial_dimension+2)))
 index_remove0 = np.concatenate((nodes_a0x,nodes_a0y,nodes_a0z))
-index_to_keep = np.setdiff1d(index_tot,index_remove0) #déjà dans le bonne ordre !
-#print(index_to_keep.shape)
-#print(index_remove0.shape)
+index_to_keep = np.setdiff1d(index_tot,index_remove0)
 
 a0 = 20
 x[index_remove0]=a0
@@ -129,11 +124,7 @@ res = x[nodes[:,1]<tol]
 
 abc = rot.evalOnQuadraturePoints()
 abc = Assembly.assemblyV(abc, Sup, 3)
-print("shape init")
-print(abc.shape)
 abc = abc.reshape((abc.shape[-2],abc.shape[-1]))
-print("shape f")
-print(abc.shape)
 
 plt.figure()
 plt.scatter(points[:,0],points[:,2], c=res[:,0], cmap='viridis', s=30)

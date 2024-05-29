@@ -35,12 +35,13 @@ elem_type = aka._segment_3
 ghost_type = aka.GhostType(1) #peu importe pour le moment
 Sup = Support(elem_filter, fem, spatial_dimension, elem_type, ghost_type)
 ######################################################################
-shapef = ShapeField(Sup)
+field_dim = 1
+shapef = ShapeField(Sup,field_dim)
 gradient = GradientOperator(shapef)
 
 # K :
 res_int=FieldIntegrator.integrate(transpose(gradient)@gradient)
-K = Assembly.assemblyK(res_int,Sup,1)
+K = Assembly.assemblyK(res_int,Sup,field_dim)
 
 tol =10e-6
 

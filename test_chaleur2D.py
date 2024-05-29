@@ -53,7 +53,8 @@ elem_type = aka._triangle_3
 ghost_type = aka.GhostType(1) #peu importe pour le moment
 Sup = Support(elem_filter, fem, spatial_dimension, elem_type, ghost_type)
 ######################################################################
-shapef = ShapeField(Sup)
+field_dim = 1
+shapef = ShapeField(Sup, field_dim)
 gradient = GradientOperator(shapef)
 
 # K :
