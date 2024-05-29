@@ -10,14 +10,14 @@ print(aka.__version__)
 ## Mesh generation
 
 mesh_file = """
-Point(1) = {0, 0, 0, 0.15};
-Point(2) = {1, 0, 0, 0.15};
-Point(3) = {1, 1, 0, 0.15};
-Point(4) = {0, 1, 0, 0.15};
-Point(5) = {0, 0, 10, 0.15};
-Point(6) = {1, 0, 10, 0.15};
-Point(7) = {1, 1, 10, 0.15};
-Point(8) = {0, 1, 10, 0.15};
+Point(1) = {0, 0, 0, 0.25};
+Point(2) = {1, 0, 0, 0.25};
+Point(3) = {1, 1, 0, 0.25};
+Point(4) = {0, 1, 0, 0.25};
+Point(5) = {0, 0, 10, 0.25};
+Point(6) = {1, 0, 10, 0.25};
+Point(7) = {1, 1, 10, 0.25};
+Point(8) = {0, 1, 10, 0.25};
 
 Line(1) = {1, 2};
 Line(2) = {2, 3};
@@ -122,18 +122,61 @@ x=x.reshape(nodes.shape)
 
 points=nodes[nodes[:,1]<tol]
 res = x[nodes[:,1]<tol]
+"""
+points=nodes[nodes[:,1]<tol]
+res = x[nodes[:,1]<tol]
+"""
+
+abc = rot.evalOnQuadraturePoints()
+abc = Assembly.assemblyV(abc, Sup, 3)
+print("shape init")
+print(abc.shape)
+abc = abc.reshape((abc.shape[-2],abc.shape[-1]))
+print("shape f")
+print(abc.shape)
+
 plt.figure()
 plt.scatter(points[:,0],points[:,2], c=res[:,0], cmap='viridis', s=30)
 plt.colorbar(label='A')
 plt.title('component X')
-plt.savefig("test_rotX.png")
+plt.savefig("test_rotX2.png")
 plt.figure()
 plt.scatter(points[:,0],points[:,2], c=res[:,1], cmap='viridis', s=30)
 plt.colorbar(label='A')
 plt.title('component Y')
-plt.savefig("test_rotY.png")
+plt.savefig("test_rotY2.png")
 plt.figure()
 plt.scatter(points[:,0],points[:,2], c=res[:,2], cmap='viridis', s=30)
 plt.colorbar(label='A')
 plt.title('component Z')
-plt.savefig("test_rotZ.png")
+plt.savefig("test_rotZ2.png")
+plt.figure()
+plt.quiver(points[:, 0], points[:, 2], res[:, 0], res[:, 1], angles='xy', label='Vecteurs')
+plt.colorbar(label='A')
+plt.title('vector component XY')
+plt.xlabel('X')
+plt.ylabel('Z')
+plt.grid(True)
+plt.axis('equal')
+plt.legend()
+plt.savefig("test_rot_vectXY.png")
+plt.figure()
+plt.quiver(points[:, 0], points[:, 2], res[:, 0], res[:, 2], angles='xy',label='Vecteurs')
+plt.colorbar(label='A')
+plt.title('vector component XZ')
+plt.xlabel('X')
+plt.ylabel('Z')
+plt.grid(True)
+plt.axis('equal')
+plt.legend()
+plt.savefig("test_rot_vectXZ.png")
+plt.figure()
+plt.quiver(points[:, 0], points[:, 2], res[:, 1], res[:, 2], angles='xy', label='Vecteurs')
+plt.colorbar(label='A')
+plt.title('vector component YZ')
+plt.xlabel('X')
+plt.ylabel('Z')
+plt.grid(True)
+plt.axis('equal')
+plt.legend()
+plt.savefig("test_rot_vectYZ.png")
