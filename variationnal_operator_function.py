@@ -2,61 +2,129 @@ import akantu as aka
 import numpy as np
 
 class Support:
-    def __init__(self, elem_filter, fem, spatial_dimension, elem_type, ghost_type):
-        self.elem_filter = elem_filter #akaArray
+    """
+    Support class.
+    
+    Attributes:
+        elem_filter: akaArray.
+        fem: FEEngine object.
+        spatial_dimension: int.
+        elem_type: aka element type.
+    """
+    def __init__(self, elem_filter, fem, spatial_dimension, elem_type):
+        self.elem_filter = elem_filter
         self.fem = fem
         self.spatial_dimension = spatial_dimension
         self.elem_type = elem_type
-        self.ghost_type = ghost_type
 
 
 class TensorField:
+    """
+    Tensor Field class.
+
+    Attributes:
+        name: field name.
+        support: Support object.
+    
+    Methods:
+        evalOnQuadraturePoints(): estimates the field values at the quadrature points relatively to the support.
+        getFieldDimension(): get dimension to be able to integrate using the FEEngine method : "fem.integrate()".
+    
+    Operators overloaded:
+        +, -, *, @.
+    """
     def __init__(self, name, support):
         self.name = name
         self.support = support
 
     def evalOnQuadraturePoints(self):
+        """
+        Estimates the field values at the quadrature points relatively to the support.
+
+        Parameters:
+            None.
+
+        Returns:
+            numpy array.
+        """
         pass
     
     def getFieldDimension(self):
+        """
+        Get dimension to be able to integrate using the FEEngine method : "fem.integrate()".
+
+        Parameters:
+            None.
+
+        Returns:
+            integer.
+        """
         pass
 
     def __mul__(self, f):
+        """
+        Overload of * Operator
+        """
         return Multiplication(self, f)
     
     def __rmul__(self,f):
+        """
+        Overload of * Operator
+        """
         return self.__mul__(f)
     
     def __add__(self, f):
+        """
+        Overload of + Operator
+        """
         return Addition(self, f)
     
     def __radd__(self, f):
+        """
+        Overload of + Operator
+        """
         return self.__add__(f)
     
     def __sub__(self, f):
+        """
+        Overload of - Operator
+        """
         return Substraction(self, f)
     
     def __rsub__(self, f):
+        """
+        Overload of - Operator
+        """
         return self.__sub__(f)
     
     def __matmul__(self, f):
+        """
+        Overload of @ Operator
+        """
         return Contraction(self, f)
  
     
 class Operator(TensorField):
- 
+    """
+    Mother class of the overloaded operators.
+    
+    Attributes:
+        args: list of TensorField Object.
+    """
     def __init__(self, *args):
         self.args = args
         self.support = args[0].support
     
     def getFieldDimension(self):
-        # Ok pour toutes les opération sur NodalTensorField, 
-        # autres cas : override dans classes dérivées
+        # True for operations between NodalTensorField, 
+        # Other cases : override in derived classes
         return self.args[0].getFieldDimension()
 
 
 class Addition(Operator):
-
+    """
+    Object returned by operator "+" between 2 TensorField.
+    """
     def __init__(self, f1, f2):
         
         super().__init__(f1, f2)
@@ -94,7 +162,9 @@ class Addition(Operator):
     
     
 class transpose(Operator):
-    # transpose les 2 dernières dimensions de l'array : "value_integration_point"; pensé pour les type GradientOperator ou N. 
+    """
+    Object returned by transposing last 2 dimension of a TensorField.
+    """
     def __init__(self,f):
 
         if not isinstance(f, (GradientOperator, N, RotationalOperator)):
@@ -112,13 +182,15 @@ class transpose(Operator):
         return self.value_integration_points
 
     def getFieldDimension(self):
-        #pas fait pour être intégré "brut" :
-        #goal : intégrer un objet retourné par une opération entre plusieurs objet dont un est transposé
-        #utilise donc le getFieldDim de la contraction par exemple, mais jamais celui-ci directement.
+        #not meant to be integrated "raw":
+        #goal of transpose: integrate an object returned by operations between multiple objects, one of which is transposed
+        #therefore, to be integrate it uses the getFieldDimension of the contraction (for example BtDB) but never this one directly.
         raise NotImplementedError("Not possible to directly integrate a transpose.")
 
 class Substraction(Operator):
-
+    """
+    Object returned by operator "-" between 2 TensorField.
+    """
     def __init__(self, f1, f2):
         
         super().__init__(f1, f2)
@@ -156,7 +228,9 @@ class Substraction(Operator):
     
 
 class Multiplication(Operator):
-
+    """
+    Object returned by operator "*" between 2 TensorField.
+    """
     def __init__(self, f1, f2):
         
         super().__init__(f1, f2)
@@ -194,6 +268,7 @@ class Multiplication(Operator):
     
 
 class NodalTensorField(TensorField):
+
     def __init__(self, name, support, nodal_field):
         super().__init__("NodalTensorField("+name+")", support)
         self.nodal_field = nodal_field
@@ -225,6 +300,7 @@ class GenericOperator:
 
 
 class Contraction(Operator):
+    
     def __init__(self, *args):
 
         if isinstance(args[0], str):
