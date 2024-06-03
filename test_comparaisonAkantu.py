@@ -11,10 +11,10 @@ print(aka.__version__)
 ## Mesh generation
 #.geo
 mesh_file = """
-Point(1) = {0, 0, 0, 1};
-Point(2) = {1, 0, 0, 1};
-Point(3) = {1, 1, 0, 1};
-Point(4) = {0, 1, 0, 1};
+Point(1) = {0, 0, 0, 0.25};
+Point(2) = {1, 0, 0, 0.25};
+Point(3) = {1, 1, 0, 0.25};
+Point(4) = {0, 1, 0, 0.25};
 """
 mesh_file += """
 Line(1) = {1, 2};
@@ -45,9 +45,6 @@ mesh.read(mesh_file)
 ##Plot
 conn = mesh.getConnectivity(aka._triangle_3)
 nodes = mesh.getNodes()
-triangles = tri.Triangulation(nodes[:, 0], nodes[:, 1], conn)
-t=plt.triplot(triangles, '--', lw=.8)
-plt.savefig('MeshElementTriangle.png')
 
 ## Material File
 material_file = """
@@ -72,12 +69,10 @@ elem_filter = np.array([[0]])
 fem = model.getFEEngine()
 elem_type = aka._triangle_3
 ghost_type = aka.GhostType(1)
-Sup = Support(elem_filter, fem, spatial_dimension, elem_type, ghost_type)
-############################################
+Sup = Support(elem_filter, fem, spatial_dimension, elem_type)
+########################################################################################
 tol =10e-10
 field_dim =2
-print("nodes :")
-print(nodes)
 
 # Calcul depl. avec operateur diff. :
 print("Computation of displacement using differential operator :")
@@ -107,7 +102,12 @@ K_reduced = K_reduced[ddl,:]
 # force 
 f = np.zeros((K.shape[0]))
 index_f_y = index[1::field_dim][nodes[:,1]>1-tol] # select ddl of component y of the nodes at y=1
-f[index_f_y]=5000 #arbitrary value (traction)
+# apply force at selected node : pay attention to nodes in extremity
+f[index_f_y]=10000/(index_f_y.shape[0]-1) #arbitrary value (traction)
+extremity_node1 = index[::field_dim][nodes[:,0]>1-tol]+1
+extremity_node2 = index[::field_dim][nodes[:,0]<tol]+1
+f[extremity_node1]=f[extremity_node1]/2
+f[extremity_node2]=f[extremity_node2]/2
 b = f[ddl] #vector force for linear system
 
 # visualize the test
@@ -124,7 +124,11 @@ print("displacement :")
 u1 = x.reshape(nodes.shape)
 print(u1)
 
-############################################
+# Save a plot with filename "patch_test_operator.png"
+plotMesht3(nodes,conn,nodal_field=u1,title ="Displacement",name_file = "patch_test_operator.png")
+
+########################################################################################
+
 # Computation of displacement using Akantu
 print("Computation of displacement using Akantu :")
 
@@ -160,4 +164,9 @@ model.solveStep()
 u2 = model.getDisplacement()
 print(u2)
 
-np.testing.assert_allclose(u1, u2, atol=tol, err_msg="Problme in patch test")
+plotMesht3(nodes,conn,nodal_field=u2,title ="Displacement",name_file = "patch_test_akantu.png")
+
+########################################################################################
+
+# Assertion that both methods give similar results 
+np.testing.assert_allclose(u1, u2, atol=tol, err_msg="Problem in patch test !")
