@@ -41,7 +41,7 @@ mesh.read(mesh_file)
 
 conn = mesh.getConnectivity(aka._triangle_3)
 nodes = mesh.getNodes()
-plotMesht3(nodes, conn)
+#plotMesht3(nodes, conn,name_file="MeshTestTriangle3.png")
 
 ##Support declaration
 
@@ -52,7 +52,7 @@ elem_filter = np.array([[0]])
 fem = model.getFEEngine()
 elem_type = aka._triangle_3
 ghost_type = aka.GhostType(1) #peu importe pour le moment
-Sup = Support(elem_filter, fem, spatial_dimension, elem_type, ghost_type)
+Sup = Support(elem_filter, fem, spatial_dimension, elem_type)
 ############################################
 # Début des tests :
 

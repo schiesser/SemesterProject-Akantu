@@ -19,7 +19,7 @@ Line(2) = {2, 3};
 """
 open("segment.geo", 'w').write(mesh_file)
 points, conn = meshGeo('segment.geo', dim=1, order=1)
-plotMesh(points, conn)
+#plotMeshs(points, conn, name_file="MeshTestSegment2.png" )
 
 ## reading the mesh
 spatial_dimension = 1    
@@ -35,8 +35,7 @@ model.initFull(_analysis_method=aka._static)
 elem_filter = np.array([[0]])
 fem = model.getFEEngine()
 elem_type = aka._segment_2
-ghost_type = aka.GhostType(1) #peu importe pour le moment
-Sup = Support(elem_filter, fem, spatial_dimension, elem_type, ghost_type)
+Sup = Support(elem_filter, fem, spatial_dimension, elem_type)
 ######################################################################
 # Début des tests :
 

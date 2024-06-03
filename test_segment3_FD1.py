@@ -18,7 +18,7 @@ Line(1) = {1, 2};
 
 open("segment3.geo", 'w').write(mesh_file)
 points, conn = meshGeo('segment3.geo', dim=1, order=2, element_type='line3')
-plotMeshs2(points, conn)
+#plotMeshs(points, conn,name_file="MeshTestSegment3.png")
 
 # Lecture du maillage
 spatial_dimension = 1    
@@ -33,7 +33,7 @@ elem_filter = np.array([[0]])
 fem = model.getFEEngine()
 elem_type = aka._segment_3
 ghost_type = aka.GhostType(1) #peu importe pour le moment
-Sup = Support(elem_filter, fem, spatial_dimension, elem_type, ghost_type)
+Sup = Support(elem_filter, fem, spatial_dimension, elem_type)
 ######################################################################
 # Début des tests :
 

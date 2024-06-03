@@ -34,7 +34,7 @@ elem_filter = np.array([[0]])
 fem = model.getFEEngine()
 elem_type = aka._segment_2
 ghost_type = aka.GhostType(1) #peu importe pour le moment
-Sup = Support(elem_filter, fem, spatial_dimension, elem_type, ghost_type)
+Sup = Support(elem_filter, fem, spatial_dimension, elem_type)
 ######################################################################
 field_dim = 1
 shapef = ShapeField(Sup,field_dim)
@@ -70,7 +70,11 @@ A = A[index_to_keep,:]
 
 x[index_to_keep] = np.linalg.solve(A, b_f)
 
+"""
 plt.scatter(points[:,0],points[:,1], c=x, cmap='viridis', s=40)
 plt.colorbar(label='temperature')
 plt.title('Temperature value at each node')
 plt.savefig("chaleur1D.png")
+"""
+
+plotMeshs2(points, conn, nodal_field=x, title ='Temperature value',name_file = "chaleur1Ds2.png" )

@@ -18,7 +18,7 @@ Line(1) = {1, 2};
 
 open("segment3.geo", 'w').write(mesh_file)
 points, conn = meshGeo('segment3.geo', dim=1, order=2, element_type='line3')
-plotMeshs2(points, conn)
+#plotMeshs2(points, conn)
 
 # Lecture du maillage
 spatial_dimension = 1    
@@ -33,7 +33,7 @@ elem_filter = np.array([[0]])
 fem = model.getFEEngine()
 elem_type = aka._segment_3
 ghost_type = aka.GhostType(1) #peu importe pour le moment
-Sup = Support(elem_filter, fem, spatial_dimension, elem_type, ghost_type)
+Sup = Support(elem_filter, fem, spatial_dimension, elem_type)
 ######################################################################
 field_dim = 1
 shapef = ShapeField(Sup,field_dim)
@@ -68,7 +68,11 @@ A = A[index_to_keep,:]
 
 x[index_to_keep] = np.linalg.solve(A, b_f)
 
+"""
 plt.scatter(points[:,0],points[:,1], c=x, cmap='viridis', s=40)
 plt.colorbar(label='temperature')
 plt.title('Temperature value at each node')
 plt.savefig("chaleur1Dseg3.png")
+"""
+
+plotMeshs2(points, conn, nodal_field=x, title ='Temperature value',name_file = "chaleur1Ds3.png" )
