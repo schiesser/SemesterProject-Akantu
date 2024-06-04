@@ -12,8 +12,7 @@
 - test_CurlOperator.py : test implementation of curl operator.
 
 - test_GenericOperator.py : test GenericOperator Class in 2 applications.
-
-- A-glyphs.pvsm : file to plot the result of the "test_CurlOperator.py"
   
 - test_segment2.py, test_segment3.py, test_triangle3.py : files with assertion that control the class N, matmul operation, transpose, class integrate and class assembly.
 
+- A-glyphs.pvsm, barre_paraview.csv : file to plot the result of the "test_CurlOperator.py" on paraview.
