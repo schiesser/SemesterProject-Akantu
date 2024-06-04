@@ -10,8 +10,8 @@ print(aka.__version__)
 
 mesh_file = """
 Point(1) = {0, 0, 0, 0.25};
-Point(2) = {0.25, 00.25, 0, 0.75};
-Point(3) = {1, 1, 0, 0.75};
+Point(2) = {0.25, 0, 0, 0.75};
+Point(3) = {1, 0, 0, 0.75};
 """
 mesh_file += """
 Line(1) = {1, 2};
@@ -20,51 +20,30 @@ Line(2) = {2, 3};
 open("segment.geo", 'w').write(mesh_file)
 #.msh
 points, conn = meshGeo('segment.geo', dim=1, order=1)
-<<<<<<< HEAD:test_segment2_FD2.py
-plotMeshs(points, conn)
-
-## reading the mesh
-spatial_dimension = 2    
-=======
 # reading the mesh
-spatial_dimension = 1    
->>>>>>> 0e838ddc0ffe44dc75995c1b4d279c3bdf4b8a4c:test_segment2.py
+spatial_dimension = 1
 mesh_file = 'segment.msh'
 mesh = aka.Mesh(spatial_dimension)
 mesh.read(mesh_file)
-
 #plotMeshs(points, conn, name_file="MeshTestSegment2.png" ) #save the mesh in .png
 
 ## Support declaration
 model = aka.SolidMechanicsModel(mesh)
 model.initFull(_analysis_method=aka._static)
-
 elem_filter = np.array([[0]])
 fem = model.getFEEngine()
 elem_type = aka._segment_2
-<<<<<<< HEAD:test_segment2_FD2.py
-ghost_type = aka.GhostType(1) #peu importe pour le moment
-=======
->>>>>>> 0e838ddc0ffe44dc75995c1b4d279c3bdf4b8a4c:test_segment2.py
 Sup = Support(elem_filter, fem, spatial_dimension, elem_type)
 ######################################################################
 # Test :
 
 ## field dimension :
-<<<<<<< HEAD:test_segment2_FD2.py
-field_dimension = 2
-=======
 field_dimension = spatial_dimension
->>>>>>> 0e838ddc0ffe44dc75995c1b4d279c3bdf4b8a4c:test_segment2.py
 
 ## tolerance :
 tol = 10e-8
 
-<<<<<<< HEAD:test_segment2_FD2.py
-## array contenant les N :
-=======
 ## array containing shape functions :
->>>>>>> 0e838ddc0ffe44dc75995c1b4d279c3bdf4b8a4c:test_segment2.py
 Ngroup = N(Sup,field_dimension)
 resNgroup = Ngroup.evalOnQuadraturePoints()
 print("N grouped :")
