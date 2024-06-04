@@ -85,7 +85,7 @@ field_dim = 3
 
 ## 3) + 4) Write weak form (using differential operator) and integrate
 shapef = ShapeField(Sup, field_dim)
-rot = RotationalOperator(shapef)
+rot = CurlOperator(shapef)
 
 res_int=FieldIntegrator.integrate(transpose(rot)@rot)
 

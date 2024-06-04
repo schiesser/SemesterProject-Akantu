@@ -106,7 +106,7 @@ class TensorField:
     
 class Operator(TensorField):
     """
-    Mother class of the overloaded operators.
+    Parent class of the overloaded operators and the Grandient, transpose, Curl.
     
     Attributes:
         args: list of TensorField Object.
@@ -167,8 +167,9 @@ class transpose(Operator):
     """
     def __init__(self,f):
 
-        if not isinstance(f, (GradientOperator, N, RotationalOperator)):
-            raise TypeError("Be careful if you want to transpose an object different from grad(N) or N. It transposes the last 2 dimensions of an array. Other possibility : use Contraction class with particular subscripts: it uses einsum form numpy.")
+        if not isinstance(f, (GradientOperator, N, CurlOperator)):
+            #can't be used for NodalTensorField
+            raise TypeError("Be careful if you want to transpose an object different from grad(N), RotationalOp or N. It transposes the last 2 dimensions of an array. Other possibility : use Contraction class with particular subscripts: it uses einsum form numpy.")
         
         super().__init__(f)
         self.name = "transpose"+"("+f.name+")"
@@ -268,7 +269,9 @@ class Multiplication(Operator):
     
 
 class NodalTensorField(TensorField):
-
+    """
+    NodalTensorField class : instanciate using values at each node (a nodal_vector).
+    """
     def __init__(self, name, support, nodal_field):
         super().__init__("NodalTensorField("+name+")", support)
         self.nodal_field = nodal_field
@@ -287,20 +290,39 @@ class NodalTensorField(TensorField):
         return self.value_integration_points
    
 class GenericOperator:
-
+    """
+    GenericOperator : use einsum from numpy. Have exactly the same application.
+    
+    Attributes:
+        subscripts_for_summation: contains the indices of the operation.
+    
+    Operator overload:
+        () : specifies on which NodalTensorField the operation is done.
+    """
     def __init__(self, *args, final=None):
+        """
+        Parameters:
+            *args : one string per TensorField, each string contains the dimension of its Tensorfield. See numpy.einsum ref : part before "->".
+            final : indice of the result TensorField. Set on which indice the einsum is done. see numpy.einsum ref : part after "->".
+        """
         if final==None:
             raise ValueError("please give the indices of result array")
         self.subscripts_for_summation = ','.join(["xy"+i for i in args])
         self.subscripts_for_summation+= "->" + "xy" + final
 
     def __call__(self,*args):
-
+        """
+        Overload of ().
+        """
         return Contraction(*((self.subscripts_for_summation,) + args))
 
 
 class Contraction(Operator):
-    
+    """
+    Object returned by operator @ between 2 TensorField or by () of a GenericOperator object.
+        If @ : Contract last 2 dimensions. (used with only 2 TensorField).
+        If () : Do the eisum with respect to the "subcript" of the GenericOperator Object.
+    """
     def __init__(self, *args):
 
         if isinstance(args[0], str):
@@ -310,7 +332,7 @@ class Contraction(Operator):
             self.subscripts_for_summation = None
             super().__init__(*args)
 
-        self.value_integration_points = None #donner bonne dimension !
+        self.value_integration_points = None 
 
     def evalOnQuadraturePoints(self):
         fieldevaluated = [tensor_field.evalOnQuadraturePoints() for tensor_field in self.args]
@@ -329,6 +351,14 @@ class Contraction(Operator):
 
 
 class ShapeField(TensorField):
+    """
+    ShapeField class.
+    
+    Member :
+        value_integration_points :
+        Contains exactly the output of getShapes of the FEEngine of Akantu.
+        It contains the Shape function evaluated on the quadrature point. It has the shape (nb_element * nb_integration_point_per_element,nb_nodes_per_elem).
+    """
     def __init__(self, support, dim_field):
         super().__init__("shape_function", support)
         self.dim_field = dim_field
@@ -342,14 +372,22 @@ class ShapeField(TensorField):
     def evalOnQuadraturePoints(self):
 
         self.value_integration_points = self.support.fem.getShapes(self.support.elem_type)
-        
         return self.value_integration_points
     
     def getFieldDimension(self):
-        # Pas fait pour être intégrer directement
+        # Never directly integrate
         raise NotImplementedError
     
 class N(ShapeField):
+    """
+    N class.
+    
+    Member :
+        value_integration_points :
+        Matrix that contain the shape function evaluated in the quad point.
+        The shape function are at the right position in "N" to have : u = N @ nodal_vector.
+        It has the shape (nb_element, nb_integration_point_per_element, field_dimension, nb_nodes_per_elem * field_dimension).
+    """
     def __init__(self, support, dim_field):
         super().__init__(support,dim_field)
         self.value_integration_points = np.zeros((self.nb_elem, self.NbIntegrationPoints, self.dim_field, self.nb_nodes_per_elem * self.dim_field))
@@ -369,6 +407,9 @@ class N(ShapeField):
         return np.prod(self.value_integration_points.shape[-2:])
 
 class ConstitutiveLaw(ShapeField):
+    """
+    Constitutive class : this class was necessary to do the patch test for Navier eq. But it's temporary.
+    """
     def __init__(self, D, support): 
         super().__init__(support, dim_field = None)
         self.D = D
@@ -386,6 +427,17 @@ class ConstitutiveLaw(ShapeField):
         return self.value_integration_points
     
 class GradientOperator(Operator):
+    """
+    GradientOperator class.
+
+    Differential Operator implemented for :
+        GradientOperator(ShapeField Object), give a "real" gradient. It was used for Heat equation.
+        GradientOperator(N Object), give the matrix B such as epsilon = B@nodal_vector. It was used for Navier eq.
+
+    Value_integration_points :
+        if GradientOperator(ShapeField Object) has the shape (nb_element,nb_integration_point_per_element, spatial_dimension, nb_nodes_per_elem*field_dimension).
+        if GradientOperator(N Object) has the shape (nb_element, nb_integration_point_per_element, 1(1D) or 3(2D), nb_nodes_per_elem*spatial_dimension ).
+    """
     def __init__(self, f1):
         super().__init__(f1)
         self.name = "Gradient(" + f1.name + ")"
@@ -428,13 +480,7 @@ class GradientOperator(Operator):
                 for i in range(dim_field):
                     self.value_integration_points[:,:,i::dim_field,i::dim_field]=derivatives_shapes
 
-            elif self.support.spatial_dimension == 2:
-                if dim_field == 1: # A contrôler !
-                    self.value_integration_points[:,:,0,0::dim_field]=derivatives_shapes[:,:,0,::self.support.spatial_dimension]
-                    self.value_integration_points[:,:,1,0::dim_field]=derivatives_shapes[:,:,0,1::self.support.spatial_dimension]
-                    self.value_integration_points[:,:,2,0::dim_field]+=derivatives_shapes[:,:,0,::self.support.spatial_dimension]
-                    self.value_integration_points[:,:,2,0::dim_field]+=derivatives_shapes[:,:,0,1::self.support.spatial_dimension]
-                        
+            elif self.support.spatial_dimension == 2:      
                 if dim_field == 2:
                     self.value_integration_points[:,:,0,0::dim_field]=derivatives_shapes[:,:,0,::self.support.spatial_dimension]
                     self.value_integration_points[:,:,1,1::dim_field]=derivatives_shapes[:,:,0,1::self.support.spatial_dimension]
@@ -457,7 +503,17 @@ class GradientOperator(Operator):
 
         return np.prod(self.value_integration_points.shape[-2:])
     
-class RotationalOperator(Operator):
+class CurlOperator(Operator):
+    """
+    CurlOperator class. Currently only implemented for a 3D case.
+
+    Differential operator implemented for :
+        CurlOperator(ShapeField Object).
+    
+    Value_integration_points (remind : only in 3D):
+        has the shape (nb_element,nb_integration_point_per_element, 3, nb_nodes_per_elem*3).
+
+    """
     def __init__(self, f1):
         super().__init__(f1)
         self.name = "Rot(" + f1.name + ")"
@@ -467,12 +523,15 @@ class RotationalOperator(Operator):
         self.NbIntegrationPoints = f1.NbIntegrationPoints
         self.nb_nodes_per_elem = self.conn.shape[1]
 
+        if dim_field !=3:
+            raise NotImplementedError("curl operator is implemented only for a 3D case !")
+
         if isinstance(f1, ShapeField):
 
             self.value_integration_points = np.zeros((self.nb_elem, self.NbIntegrationPoints, self.support.spatial_dimension, self.nb_nodes_per_elem * dim_field))
 
         else : 
-            raise NotImplementedError("rotational is implemented only for a shapefield")
+            raise NotImplementedError("curl operator is implemented only for a shapefield")
           
     
     def evalOnQuadraturePoints(self):
@@ -493,7 +552,7 @@ class RotationalOperator(Operator):
             self.value_integration_points[:,:,2,1::dim_field]=derivatives_shapes[:,:,0,0::self.support.spatial_dimension]
             self.value_integration_points[:,:,2,0::dim_field]=(-1)*derivatives_shapes[:,:,0,1::self.support.spatial_dimension]
         else :
-            raise NotImplementedError
+            raise NotImplementedError("curl operator is implemented only for a 3D case !")
         
         return self.value_integration_points
         
@@ -503,9 +562,23 @@ class RotationalOperator(Operator):
         raise np.prod(self.value_integration_points.shape[-2:])
     
 class FieldIntegrator:
+    """
+    FieldIntegrator class (static class).
+
+    Methods:
+        integrate : integrate a TensorField.
+    """
     @staticmethod
     def integrate(field):
-        
+        """
+        Integrate a TensorField.
+
+        Parameters:
+            TensorField
+
+        Returns:
+            numpy array of shape "(nb_element,-1)".
+        """
         support = field.support
         
         value_integration_points=field.evalOnQuadraturePoints()
@@ -529,14 +602,41 @@ class FieldIntegrator:
         return result_integration
 
 class Assembly:
-
+    """
+    Assembly class (static class).
+    
+    Methods:
+        assembleNodalFieldIntegration : Assemble the result of "integrate" for a NodalTensorField.
+        assemblyK : Assemble a stiffness matrix (case Navier eq) or thermal conductivity matrix (heat eq.) or ... (rotationnal case) after "integrate". 
+        assemblyV : Assemble the integration of N Object or Grad(ShapeField object). !!! test case Grad(ShapeField object)!!!
+        assemblyB : Assemble the integration of grad(N) Object.
+    """
     @staticmethod
     def assembleNodalFieldIntegration(result_integration):
+        """
+        Assembled the result of "integrate" for a NodalTensorField.
+
+        Parameters:
+            array : result of the integrate method.
+
+        Returns:
+            numpy array of shape "(nb_element,-1)".
+        """
 
         return np.sum(result_integration,axis=0)
     
     def assemblyK(groupedKlocal, support, field_dim):
-        
+        """
+        Assemble a stiffness matrix (case Navier eq) or thermal conductivity matrix (heat eq.) or ... (rotationnal case) after "integrate". 
+
+        Parameters:
+            groupedKlocal : numpy array, result of the "integrate".
+            support : Support Object.
+            field_dim : field dimension.
+
+        Returns:
+            numpy array of shape "(nb_nodes*field_dimension,nb_nodes*field_dimension)".
+        """
         dim = support.fem.getMesh().getNbNodes() * field_dim
         conn = support.fem.getMesh().getConnectivity(support.elem_type)
 
@@ -565,7 +665,17 @@ class Assembly:
         return K
 
     def assemblyV(groupedV, support, field_dim):
+        """
+        Assemble the integration of N Object or Grad(ShapeField object). !!! test case Grad(ShapeField object)!!!
         
+        Parameters:
+            groupedV : numpy array, result of the "integrate".
+            support : Support Object.
+            field_dim : field dimension.
+
+        Returns:
+            numpy array of shape "(field_dimension,nb_nodes*field_dimension)".
+        """
         dim = support.fem.getMesh().getNbNodes() * field_dim
         conn = support.fem.getMesh().getConnectivity(support.elem_type)
 
@@ -594,7 +704,17 @@ class Assembly:
         return V
     
     def assemblyB(groupedV, support, field_dim):
+        """
+        Assemble the integration of grad(N) Object. 
 
+        Parameters:
+            groupedV : numpy array, result of the "integrate".
+            support : Support Object.
+            field_dim : field dimension.
+
+        Returns:
+            numpy array.
+        """
         dim = support.fem.getMesh().getNbNodes() * field_dim
         conn = support.fem.getMesh().getConnectivity(support.elem_type)
 
@@ -623,6 +743,4 @@ class Assembly:
             for i, gi in enumerate(ddl):
                     V[:, gi] += V_locale[e,0,:,i]
 
-        if support.spatial_dimension ==2 and field_dim==1:
-            V[-1,:]=V[-1,:]*(1/2)#problème
         return V
