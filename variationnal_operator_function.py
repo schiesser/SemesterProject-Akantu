@@ -314,7 +314,7 @@ class GenericOperator:
         """
         Overload of ().
         """
-        return Contraction(*((self.subscripts_for_summation,) + args))
+        return Contraction(*((self.subscripts_for_summation,) + args)) #return a Contraction Object even if it's not a real contraction. But works like this.
 
 
 class Contraction(Operator):
@@ -359,7 +359,7 @@ class ShapeField(TensorField):
         Contains exactly the output of getShapes of the FEEngine of Akantu.
         It contains the Shape function evaluated on the quadrature point. It has the shape (nb_element * nb_integration_point_per_element,nb_nodes_per_elem).
     """
-    def __init__(self, support, dim_field):
+    def __init__(self, support, dim_field):#dim_field in parameter. Can maybe be improved. Not used in this class but necessary if we want to write directly grad(...) without giving the dim.
         super().__init__("shape_function", support)
         self.dim_field = dim_field
         self.NbIntegrationPoints=support.fem.getNbIntegrationPoints(support.elem_type)
