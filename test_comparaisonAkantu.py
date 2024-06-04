@@ -8,8 +8,8 @@ from plot import *
 print(aka.__file__)
 print(aka.__version__)
 
-## Mesh generation
-#.geo
+## 1) Mesh generation
+
 mesh_file = """
 Point(1) = {0, 0, 0, 0.25};
 Point(2) = {1, 0, 0, 0.25};
@@ -32,8 +32,8 @@ Physical Line("BlockX") = {1};
 Physical Line("Traction") = {3};
 Physical Surface("Mesh") = {6};
 """
-open("triangle.geo", 'w').write(mesh_file)
 
+open("triangle.geo", 'w').write(mesh_file)
 #.msh
 nodes, conn = meshGeo("triangle.geo", dim =2, order=1, element_type='triangle')
 # reading the mesh
@@ -42,9 +42,7 @@ mesh_file = 'triangle.msh'
 mesh = aka.Mesh(spatial_dimension)
 mesh.read(mesh_file)
 
-##Plot
-conn = mesh.getConnectivity(aka._triangle_3)
-nodes = mesh.getNodes()
+#plotMesht3(nodes,conn,title="Plate Mesh", name_file ="MeshPatchTest.png")#save the mesh in .png
 
 ## Material File
 material_file = """
@@ -60,15 +58,13 @@ aka.parseInput(material_file)
 E   = 2.1e11   # young's modulus
 nu  = 0.3      # poisson's ratio
 
-## Solid MechanicsModel
+## 2) Support declaration
+
 model = aka.SolidMechanicsModel(mesh)
 model.initFull(_analysis_method=aka._static)
-
-##Support declaration
 elem_filter = np.array([[0]])
 fem = model.getFEEngine()
 elem_type = aka._triangle_3
-ghost_type = aka.GhostType(1)
 Sup = Support(elem_filter, fem, spatial_dimension, elem_type)
 ########################################################################################
 tol =10e-10
@@ -76,26 +72,26 @@ field_dim =2
 
 # Calcul depl. avec operateur diff. :
 print("Computation of displacement using differential operator :")
+
+## 3) + 4) Write weak form (using differential operator) and integrate
 Ngroup = N(Sup, field_dim)
 B = GradientOperator(Ngroup)
-
-# Constitutive law
-MatrixD = E/((1+nu)*(1-2*nu))*np.array([[1-nu,nu,0],[nu,1-nu,0],[0,0,(1-2*nu)/2]])
+MatrixD = E/((1+nu)*(1-2*nu))*np.array([[1-nu,nu,0],[nu,1-nu,0],[0,0,(1-2*nu)/2]])# Constitutive law (plane constraints)
 D = ConstitutiveLaw(MatrixD, Sup)
 
-# K (without boundary conditions)
 BtDB = transpose(B)@D@B
 K_locales = FieldIntegrator.integrate(BtDB)
+
+## 5) Assembly
 K =Assembly.assemblyK(K_locales,Sup,2)
 
-# K (with boundary conditions) : (boundary conditions will be setting "0" displacement at some ddl)
+## 6) Apply boundary conditions to solve the problem
+# boundary conditions : setting "0" displacement at some ddl
 index = np.arange(0,nodes.shape[0]*field_dim)
-## nodes with boundary condition
 index_nodes_boundary_condition_x = index[::field_dim][nodes[:,1]<tol] #select x coordinates of nodes at position y=0
 index_nodes_boundary_condition_y = index[1::field_dim][nodes[:,1]<tol] #select y coordinates of nodes at position y=0
 index_remove = np.sort(np.concatenate((index_nodes_boundary_condition_x, index_nodes_boundary_condition_y))) 
-ddl = np.setdiff1d(index, index_remove) #keep ddl without condition
-
+ddl = np.setdiff1d(index, index_remove) # ddl
 K_reduced = K[:,ddl]
 K_reduced = K_reduced[ddl,:]
 
@@ -125,7 +121,7 @@ u1 = x.reshape(nodes.shape)
 print(u1)
 
 # Save a plot with filename "patch_test_operator.png"
-plotMesht3(nodes,conn,nodal_field=u1,title ="Displacement",name_file = "patch_test_operator.png")
+plotMesht3(nodes,conn,nodal_field=u1,title ="Displacement using differential operator",name_file = "patch_test_operator.png")
 
 ########################################################################################
 
@@ -164,9 +160,10 @@ model.solveStep()
 u2 = model.getDisplacement()
 print(u2)
 
-plotMesht3(nodes,conn,nodal_field=u2,title ="Displacement",name_file = "patch_test_akantu.png")
+# Save a plot with filename "patch_test_akantu.png"
+plotMesht3(nodes,conn,nodal_field=u2,title ="Displacement using Akantu",name_file = "patch_test_akantu.png")
 
 ########################################################################################
 
-# Assertion that both methods give similar results 
+# Assert that both methods give similar results 
 np.testing.assert_allclose(u1, u2, atol=tol, err_msg="Problem in patch test !")
