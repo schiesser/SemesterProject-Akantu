@@ -15,5 +15,5 @@
 
 - A-glyphs.pvsm : file to plot the result of the "test_CurlOperator.py"
   
-- test_segment2_FD1.py, test_segment2_FD2.py, test_segment3_FD1.py, test_segment3_FD2.py, test_triangle3_FD1.py, test_triangle3_FD2.py : files with assertion that control the results of different integration for Navier-Cauchy equation (int(N), int(B), K)
+- test_segment2.py, test_segment3.py, test_triangle3.py : files with assertion that control the class N, matmul operation, transpose, class integrate and class assembly.
 
