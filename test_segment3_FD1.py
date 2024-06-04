@@ -1,14 +1,9 @@
-import os
-import subprocess
-import meshio
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.tri as mtri
 import akantu as aka
 from variationnal_operator_function import *
 from plot import *
 
-# Génération du maillage
+# Mesh generation 
 mesh_file = """
 Point(1) = {0, 0, 0, 0.5};
 Point(2) = {1, 0, 0, 0.5};
@@ -17,14 +12,17 @@ Line(1) = {1, 2};
 """
 
 open("segment3.geo", 'w').write(mesh_file)
+#.msh
 points, conn = meshGeo('segment3.geo', dim=1, order=2, element_type='line3')
-#plotMeshs(points, conn,name_file="MeshTestSegment3.png")
-
-# Lecture du maillage
+# reading the mesh
 spatial_dimension = 1    
 mesh_file = 'segment3.msh'
 mesh = aka.Mesh(spatial_dimension)
 mesh.read(mesh_file)
+
+#plotMeshs(points, conn,name_file="MeshTestSegment3.png")#save the mesh in .png
+
+##Support declaration
 
 model = aka.SolidMechanicsModel(mesh)
 model.initFull(_analysis_method=aka._static)
@@ -32,59 +30,58 @@ model.initFull(_analysis_method=aka._static)
 elem_filter = np.array([[0]])
 fem = model.getFEEngine()
 elem_type = aka._segment_3
-ghost_type = aka.GhostType(1) #peu importe pour le moment
 Sup = Support(elem_filter, fem, spatial_dimension, elem_type)
 ######################################################################
-# Début des tests :
+# Test :
 
 ## field dimension :
-field_dimension = 1
+field_dimension = spatial_dimension
 
 ## tolerance :
 tol = 10e-8
 
-## array contenant les N :
+## array containing shape functions :
 Ngroup = N(Sup,field_dimension)
 resNgroup = Ngroup.evalOnQuadraturePoints()
 print("N grouped :")
 print(resNgroup)
-print("avec shape :")
+print("with shape :")
 print(resNgroup.shape)
 
-## Integration de N :
+## Integration of N :
 intN = FieldIntegrator.integrate(Ngroup)
-print("integration de N :")
+print("integration of N :")
 print(intN)
 print("avec shape :")
 print(intN.shape)
 
-## Assemblage de l'integration de N :
+## Assembly of int(N) :
 AssembledIntN=Assembly.assemblyV(intN, Sup, field_dimension)
-print("intégration de N assemblé :")
+print("assembly of int(N) :")
 print(AssembledIntN)
 # True result :
 expected_result_integration_N = np.array([[1/12, 1/12, 1/6, 1/3, 1/3]])
 # control of the computed integration of N :
 np.testing.assert_allclose(AssembledIntN, expected_result_integration_N, atol=tol, err_msg="integration of N isn't correct")
 
-## Gradient de N :
+## Grad(N) :
 Bgroup = GradientOperator(Ngroup)
 resBgroup = Bgroup.evalOnQuadraturePoints()
 print("B grouped :")
 print(resBgroup)
-print("avec shape :")
+print("with shape :")
 print(resBgroup.shape)
 
-## Integration de grad(N) :
+## Integration of grad(N) :
 intB = FieldIntegrator.integrate(Bgroup)
 print("B integration :")
 print(intB)
-print("avec shape :")
+print("with shape :")
 print(intB.shape)
 
-## Assemblage de l'intégration de grad(N):
+## Assembly integrate grad(N):
 AssembledIntB=Assembly.assemblyV(intB, Sup, field_dimension)
-print("Assemblage de l'intégration de grad(N)")
+print("Assembly int[grad(N)]")
 print(AssembledIntB)
 # True result :
 expected_result_integration_gradN = np.array([[-1.0, 1.0, 0, 0, 0]])
@@ -92,27 +89,27 @@ expected_result_integration_gradN = np.array([[-1.0, 1.0, 0, 0, 0]])
 np.testing.assert_allclose(AssembledIntB, expected_result_integration_gradN, atol=tol, err_msg="integration of grad(N) isn't correct")
 
 
-## Test opération Transpose(B)@B :
+## Test operation Transpose(B)@B :
 BtB = transpose(Bgroup)@Bgroup
 resBtB = BtB.evalOnQuadraturePoints()
 print("resultat BtB:")
 print(resBtB)
-print("avec shape")
+print("with shape")
 print(resBtB.shape)
 
-## Intégration de BtB :
+## Integration of BtB :
 intBtB = FieldIntegrator.integrate(BtB)
-print("résultat de l'intégration de BtB :")
+print("result integration of BtB :")
 print(intBtB)
-print("avec shape :")
+print("with shape :")
 print(intBtB.shape)
 
-## Assemblage de K gloable :
+## Assembly K gloable :
 
 Kglobale = Assembly.assemblyK(intBtB, Sup, field_dimension)
 print("K globale :")
 print(Kglobale)
-print("avec shape :")
+print("with shape :")
 print(Kglobale.shape)
 # True result :
 expected_result_K = np.array([[ 14/3, 0.0, 2/3, -16/3, 0.0],[0.0, 14/3, 2/3, 0.0, -16/3],[2/3, 2/3, 28/3, -16/3, -16/3],[-16/3, 0.0, -16/3, 32/3, 0.0],[0.0, -16/3, -16/3, 0.0, 32/3]])
