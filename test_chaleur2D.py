@@ -7,7 +7,7 @@ from plot import *
 print(aka.__file__)
 print(aka.__version__)
 
-## Mesh generation
+## 1) Mesh generation
 
 mesh_file = """
 Point(1) = {0, 0, 0, 0.1};
@@ -37,12 +37,12 @@ spatial_dimension = 2
 mesh_file = 'triangle.msh'
 mesh = aka.Mesh(spatial_dimension)
 mesh.read(mesh_file)
-
 conn = mesh.getConnectivity(aka._triangle_3)
 nodes = mesh.getNodes()
-#plotMesht3(nodes, conn)
 
-##Support declaration
+#plotMesht3(nodes, conn)#save the mesh in .png
+
+## 2) Support declaration
 
 model = aka.SolidMechanicsModel(mesh)
 model.initFull(_analysis_method=aka._static)
@@ -50,28 +50,29 @@ model.initFull(_analysis_method=aka._static)
 elem_filter = np.array([[0]])
 fem = model.getFEEngine()
 elem_type = aka._triangle_3
-ghost_type = aka.GhostType(1) #peu importe pour le moment
 Sup = Support(elem_filter, fem, spatial_dimension, elem_type)
 ######################################################################
 field_dim = 1
+
+## 3) + 4) Write weak form (using differential operator) and integrate
 shapef = ShapeField(Sup, field_dim)
 gradient = GradientOperator(shapef)
 
-# K :
 res_int=FieldIntegrator.integrate(transpose(gradient)@gradient)
+
+## 5) Assembly
 K = Assembly.assemblyK(res_int,Sup,1)
 
-# for boundary conditions :
+## 6) Apply boundary conditions to solve the problem
 tol =10e-6
 
 index = np.arange(0,nodes.shape[0])
 x=np.zeros(index.shape)
-
-nodes_t0 = index[nodes[:,0]<tol]
-nodes_t1 = index[nodes[:,0]>1-tol]
+nodes_t0 = index[nodes[:,0]<tol]#select indice at x=0
+nodes_t1 = index[nodes[:,0]>1-tol]#select indice at x=1
 
 index_remove = np.concatenate((nodes_t0, nodes_t1))
-index_to_keep = np.setdiff1d(index, index_remove) #déjà dans le bonne ordre !
+index_to_keep = np.setdiff1d(index, index_remove) #ddl
 
 t0 = 20
 t1 = 10
@@ -86,12 +87,5 @@ A = A[index_to_keep,:]
 
 x[index_to_keep] = np.linalg.solve(A, b_f)
 
-"""
-plt.scatter(nodes[:,0],nodes[:,1], c=x, cmap='viridis', s=40)
-plt.colorbar(label='Temperature')
-plt.title('Temperature value at each node')
-plt.savefig("chaleur2D.png")
-plt.close()
-"""
-
+# Plot results
 plotMesht3(nodes, conn, nodal_field=x, title ='Temperature value',name_file = "chaleur2D.png" )

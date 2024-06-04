@@ -79,7 +79,6 @@ model.initFull(_analysis_method=aka._static)
 elem_filter = np.array([[0]])
 fem = model.getFEEngine()
 elem_type = aka._tetrahedron_4
-ghost_type = aka.GhostType(1) #peu importe pour le moment
 Sup = Support(elem_filter, fem, spatial_dimension, elem_type)
 ######################################################################
 field_dim = 3
@@ -94,7 +93,6 @@ res_int=FieldIntegrator.integrate(transpose(rot)@rot)
 K = Assembly.assemblyK(res_int,Sup,3)
 
 ## 6) Apply boundary conditions to solve the problem
-# for boundary conditions :
 tol =10e-6
 
 index = np.arange(0,nodes.shape[0])
