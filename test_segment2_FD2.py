@@ -10,8 +10,8 @@ print(aka.__version__)
 
 mesh_file = """
 Point(1) = {0, 0, 0, 0.25};
-Point(2) = {0.25, 0, 0, 0.75};
-Point(3) = {1, 0, 0, 0.75};
+Point(2) = {0.25, 00.25, 0, 0.75};
+Point(3) = {1, 1, 0, 0.75};
 """
 mesh_file += """
 Line(1) = {1, 2};
@@ -19,10 +19,10 @@ Line(2) = {2, 3};
 """
 open("segment.geo", 'w').write(mesh_file)
 points, conn = meshGeo('segment.geo', dim=1, order=1)
-plotMesh(points, conn)
+plotMeshs(points, conn)
 
 ## reading the mesh
-spatial_dimension = 1    
+spatial_dimension = 2    
 mesh_file = 'segment.msh'
 mesh = aka.Mesh(spatial_dimension)
 mesh.read(mesh_file)
@@ -36,18 +36,17 @@ elem_filter = np.array([[0]])
 fem = model.getFEEngine()
 elem_type = aka._segment_2
 ghost_type = aka.GhostType(1) #peu importe pour le moment
-Sup = Support(elem_filter, fem, spatial_dimension, elem_type, ghost_type)
+Sup = Support(elem_filter, fem, spatial_dimension, elem_type)
 ######################################################################
 # Début des tests :
 
 ## field dimension :
-field_dimension = 1
+field_dimension = 2
 
 ##tolerance :
 tol = 10e-6
 
 ## array contenant les N :
-field_dimension = 2
 Ngroup = N(Sup,field_dimension)
 resNgroup = Ngroup.evalOnQuadraturePoints()
 print("N grouped :")
