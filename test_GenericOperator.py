@@ -17,7 +17,6 @@ Line(1) = {1, 2};
 """
 open("segment.geo", 'w').write(mesh_file)
 points, conn = meshGeo('segment.geo', dim=1, order=1)
-plotMesh(points, conn)
 
 ## reading the mesh
 spatial_dimension = 1    
@@ -33,25 +32,40 @@ model.initFull(_analysis_method=aka._static)
 elem_filter = np.array([[0]])
 fem = model.getFEEngine()
 elem_type = aka._segment_2
-ghost_type = aka.GhostType(1) #peu importe pour le moment
-Sup = Support(elem_filter, fem, spatial_dimension, elem_type, ghost_type)
+Sup = Support(elem_filter, fem, spatial_dimension, elem_type)
 ######################################################################
-# Début des tests :
+field_dimension = 1
+tol = 10e-8
+# Test of GenericOperator :
+## comparison between GenericOperator and matmul
+## (case of Mass matrix in 1D with 2 elements segment2)
 
-
-#print(Sup.fem.getMesh().getConnectivity(Sup.elem_type))
-#print(Sup.fem.getMesh().getNbNodes())
-
-field_dimension = 2
 Ngroup = N(Sup,field_dimension)
+#GenericOP :
+op = GenericOperator("ki", "kj", final = "ij")
+using_generic_op = op(Ngroup,Ngroup).evalOnQuadraturePoints()
+#@
+using_matmul=(transpose(Ngroup)@Ngroup).evalOnQuadraturePoints()
 
+print("Mass matrix using GenericOperator :")
+print(using_generic_op)
+print("Mass matrix using matmul :")
+print(using_matmul)
 
-op = GenericOperator("ik", "jk", final = "ij")
-test = op(Ngroup,Ngroup).evalOnQuadraturePoints()
+#Assert that the result is similar
+np.testing.assert_allclose(using_generic_op, using_matmul, atol=tol, err_msg="Problem in GenericOperator !")
 
-"""
-NcN = Contraction(Ngroup, Ngroup)
-test = NcN("ijkl, ijml -> km").evalOnQuadraturePoints()
-"""
+## comparison between GenericOperator and transpose operation
+#GenericOP :
+op2 = GenericOperator("ij", final = "ji")
+using_generic_op2 = op2(Ngroup).evalOnQuadraturePoints()
+#transpose() :
+using_transpose = transpose(Ngroup).evalOnQuadraturePoints()
 
-print(test)
+print("Ngroup transpose using GenericOp :")
+print(using_generic_op2)
+print("Ngroup transpose using transpose :")
+print(using_transpose)
+
+#Assert that the result is similar
+np.testing.assert_allclose(using_generic_op2, using_transpose, atol=tol, err_msg="Problem in GenericOperator !")
