@@ -69,7 +69,7 @@ mesh.read(mesh_file)
 nodes = mesh.getNodes()
 conn = mesh.getConnectivity(aka._tetrahedron_4)
 
-plotMeshtetra(nodes, conn)
+#plotMeshtetra(nodes, conn)#save the mesh in .png
 
 ## 2) Support declaration
 
