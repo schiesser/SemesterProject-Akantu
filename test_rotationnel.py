@@ -2,12 +2,12 @@ import numpy as np
 import akantu as aka
 from variationnal_operator_function import *
 import matplotlib.pyplot as plt
-from plot3D import *
+from plot import *
 
 print(aka.__file__)
 print(aka.__version__)
 
-## Mesh generation
+## 1) Mesh generation
 
 mesh_file = """
 Point(1) = {0, 0, 0, 0.25};
@@ -71,7 +71,7 @@ conn = mesh.getConnectivity(aka._tetrahedron_4)
 
 plotMeshtetra(nodes, conn)
 
-##Support declaration
+## 2) Support declaration
 
 model = aka.SolidMechanicsModel(mesh)
 model.initFull(_analysis_method=aka._static)
@@ -80,94 +80,46 @@ elem_filter = np.array([[0]])
 fem = model.getFEEngine()
 elem_type = aka._tetrahedron_4
 ghost_type = aka.GhostType(1) #peu importe pour le moment
-Sup = Support(elem_filter, fem, spatial_dimension, elem_type, ghost_type)
+Sup = Support(elem_filter, fem, spatial_dimension, elem_type)
 ######################################################################
 field_dim = 3
+
+## 3) + 4) Write weak form (using differential operator) and integrate
 shapef = ShapeField(Sup, field_dim)
 rot = RotationalOperator(shapef)
 
 res_int=FieldIntegrator.integrate(transpose(rot)@rot)
+
+## 5) Assembly
 K = Assembly.assemblyK(res_int,Sup,3)
 
+## 6) Apply boundary conditions to solve the problem
 # for boundary conditions :
 tol =10e-6
 
 index = np.arange(0,nodes.shape[0])
 x=np.zeros(index.shape[0]*3)
-mask_a0x = (nodes[:, 2] < tol)
+mask_a0x = (nodes[:, 2] < tol) #select all nodes on plane z = 0
 nodes_a0x = index[mask_a0x] * spatial_dimension
 nodes_a0y = nodes_a0x+1
 nodes_a0z = nodes_a0y+1
 
 index_tot = np.concatenate((index*spatial_dimension, (index*spatial_dimension+1), (index*spatial_dimension+2)))
-index_remove0 = np.concatenate((nodes_a0x,nodes_a0y,nodes_a0z))
-index_to_keep = np.setdiff1d(index_tot,index_remove0)
+index_remove0 = np.concatenate((nodes_a0x,nodes_a0y,nodes_a0z)) #indice of component wiht boundary condition
+index_to_keep = np.setdiff1d(index_tot,index_remove0) #indice of ddl
 
 a0 = 20
-x[index_remove0]=a0
-comp_t0 = np.sum(K[:,index_remove0], axis = 1)*a0
+x[index_remove0]=a0 #apply 20 as boundary condition
 
+comp_t0 = np.sum(K[:,index_remove0], axis = 1)*a0
 b = -comp_t0
 b_f = b[index_to_keep]
 A = K[:,index_to_keep]
 A = A[index_to_keep,:]
-
 x[index_to_keep] = np.linalg.solve(A, b_f)
-x=x.reshape(nodes.shape)
+x=x.reshape(nodes.shape) #array x contains displacement, same shape as the nodes array (which contain the coordinates of the nodes)
 
-points=nodes[nodes[:,1]<tol]
-res = x[nodes[:,1]<tol]
-"""
-points=nodes[nodes[:,1]<tol]
-res = x[nodes[:,1]<tol]
-"""
-
-abc = rot.evalOnQuadraturePoints()
-abc = Assembly.assemblyV(abc, Sup, 3)
-abc = abc.reshape((abc.shape[-2],abc.shape[-1]))
-
-plt.figure()
-plt.scatter(points[:,0],points[:,2], c=res[:,0], cmap='viridis', s=30)
-plt.colorbar(label='A')
-plt.title('component X')
-plt.savefig("test_rotX2.png")
-plt.figure()
-plt.scatter(points[:,0],points[:,2], c=res[:,1], cmap='viridis', s=30)
-plt.colorbar(label='A')
-plt.title('component Y')
-plt.savefig("test_rotY2.png")
-plt.figure()
-plt.scatter(points[:,0],points[:,2], c=res[:,2], cmap='viridis', s=30)
-plt.colorbar(label='A')
-plt.title('component Z')
-plt.savefig("test_rotZ2.png")
-plt.figure()
-plt.quiver(points[:, 0], points[:, 2], res[:, 0], res[:, 1], angles='xy', label='Vecteurs')
-plt.colorbar(label='A')
-plt.title('vector component XY')
-plt.xlabel('X')
-plt.ylabel('Z')
-plt.grid(True)
-plt.axis('equal')
-plt.legend()
-plt.savefig("test_rot_vectXY.png")
-plt.figure()
-plt.quiver(points[:, 0], points[:, 2], res[:, 0], res[:, 2], angles='xy',label='Vecteurs')
-plt.colorbar(label='A')
-plt.title('vector component XZ')
-plt.xlabel('X')
-plt.ylabel('Z')
-plt.grid(True)
-plt.axis('equal')
-plt.legend()
-plt.savefig("test_rot_vectXZ.png")
-plt.figure()
-plt.quiver(points[:, 0], points[:, 2], res[:, 1], res[:, 2], angles='xy', label='Vecteurs')
-plt.colorbar(label='A')
-plt.title('vector component YZ')
-plt.xlabel('X')
-plt.ylabel('Z')
-plt.grid(True)
-plt.axis('equal')
-plt.legend()
-plt.savefig("test_rot_vectYZ.png")
+# save results in CSV file
+#import pandas as pd
+#df = pd.DataFrame({'x': nodes[:, 0], 'y': nodes[:, 1],'z': nodes[:, 2], 'vx': x[:, 0],'vy': x[:, 1], 'vz': x[:, 2]})
+#df.to_csv('barre_paraview.csv', index=False)
