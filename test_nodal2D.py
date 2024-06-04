@@ -40,7 +40,7 @@ mesh.read(mesh_file)
 
 conn = mesh.getConnectivity(aka._triangle_3)
 nodes = mesh.getNodes()
-plotMesht3(nodes, conn)
+plotMesht3(nodes, conn) #plot the mesh
 
 ##Support declaration
 
@@ -50,8 +50,7 @@ model.initFull(_analysis_method=aka._static)
 elem_filter = np.array([[0]])
 fem = model.getFEEngine()
 elem_type = aka._triangle_3
-ghost_type = aka.GhostType(1) #peu importe pour le moment
-Sup = Support(elem_filter, fem, spatial_dimension, elem_type, ghost_type)
+Sup = Support(elem_filter, fem, spatial_dimension, elem_type)
 
 ## Interpolation
 
@@ -69,12 +68,11 @@ nodal_vector=np.ones(nodes.shape)*3
 nodal_vector[0,0]=2 #première coordonnée : numérotation du noeud; deuxième coordonnée : selon dimensions (ici champ 2D)
 nodal_vector[2,1]=1
 '''
-'''
+
 print("nodal_field testé :")
-print(nodal_field)
+print(nodal_vector)
 print("avec les connections :")
 print(conn)
-'''
 
 NTF = NodalTensorField("ex_displacement", Sup, nodal_vector)
 v = NTF.evalOnQuadraturePoints()
@@ -92,5 +90,5 @@ print(assembledint_depl)
 newNTF=(2 - NTF*2 + 1)
 integration=FieldIntegrator.integrate(newNTF)
 assembledint = Assembly.assembleNodalFieldIntegration(integration)
-print("Integration de la fonction de tenseur : ")
+print("Integration de la fonction de NodalTensorField : ")
 print(assembledint)
