@@ -42,8 +42,8 @@ tol = 10e-8
 
 Ngroup = N(Sup,field_dimension)
 #GenericOP :
-op = GenericOperator("ki", "kj", final = "ij")
-using_generic_op = op(Ngroup,Ngroup).evalOnQuadraturePoints()
+op_NtN = GenericOperator("ki", "kj", final = "ij")
+using_generic_op = op_NtN(Ngroup,Ngroup).evalOnQuadraturePoints()
 #@
 using_matmul=(transpose(Ngroup)@Ngroup).evalOnQuadraturePoints()
 
@@ -57,8 +57,8 @@ np.testing.assert_allclose(using_generic_op, using_matmul, atol=tol, err_msg="Pr
 
 ## comparison between GenericOperator and transpose operation
 #GenericOP :
-op2 = GenericOperator("ij", final = "ji")
-using_generic_op2 = op2(Ngroup).evalOnQuadraturePoints()
+op_transpose = GenericOperator("ij", final = "ji")
+using_generic_op2 = op_transpose(Ngroup).evalOnQuadraturePoints()
 #transpose() :
 using_transpose = transpose(Ngroup).evalOnQuadraturePoints()
 
