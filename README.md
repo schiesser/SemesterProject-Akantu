@@ -1,5 +1,5 @@
 # SemesterProject
- defining models with differential Operators in Akantu
+ Objective : defining models with differential Operators in Akantu
 ## Files 
 - variationnal_operator_function.py : contains all the implementation.
 
