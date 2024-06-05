@@ -10,18 +10,6 @@ from mpl_toolkits.mplot3d.art3d import Line3DCollection
 def readMesh(filename, element_type):
     mesh = meshio.read(filename)
     return mesh.points[:, :2], mesh.cells_dict[element_type]
-"""
-def plotMesh(coords, connectivity):
-    plt.axes().set_aspect('equal')
-    for segment in connectivity:
-        x = [coords[segment[0], 0], coords[segment[-1], 0]]
-        y = [coords[segment[0], -1], coords[segment[-1], -1]]
-        plt.plot(x, y, 'b--',markersize=3)
-    plt.scatter(coords[:, 0], coords[:, 1], color='black')
-    plt.xlabel('X')
-    plt.ylabel('Y')
-    plt.savefig('mesh_segment2.png')
-"""
 
 def meshGeo(filename, dim=2, order=1, element_type='line'):
     out = os.path.splitext(filename)[0] + '.msh'
@@ -33,18 +21,7 @@ def meshGeo(filename, dim=2, order=1, element_type='line'):
         mesh = readMesh(out, element_type)
         return mesh
     return None
-"""
-def plotMeshs2(coords, connectivity):
-    plt.axes().set_aspect('equal')
-    for segment in connectivity:
-        x = coords[segment, 0]
-        y = coords[segment, 1]
-        plt.plot(x, y, 'b--',markersize=3)
-    plt.scatter(coords[:, 0], coords[:, 1], color='black')
-    plt.xlabel('X')
-    plt.ylabel('Y')
-    plt.savefig('mesh_segment3.png')
-"""
+
 def generate_scalar_field(field, axis=None):
     if axis is None:
         field = np.linalg.norm(field, axis=1)
@@ -83,10 +60,9 @@ def plotMeshs(coords, connectivity, nodal_field=None, title=None, name_file="Mes
         segments = np.array([coords[segment] for segment in connectivity])
         values = np.array([nodal_field[segment] for segment in connectivity])
         
-        # Créer une collection de lignes
         lc = LineCollection(segments, cmap='viridis', array=values.mean(axis=1), linewidths=2)
         plt.gca().add_collection(lc)
-        plt.colorbar(lc, fraction=0.025, pad=0.05)
+        plt.colorbar(lc, fraction=0.02, pad=0.03)
     
     plt.scatter(coords[:, 0], coords[:, 1], color='black', s=10)
 
