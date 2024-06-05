@@ -452,7 +452,7 @@ class GradientOperator(Operator):
             dim_field = f1.dim_field
 
             if self.support.spatial_dimension == 1 :
-                nb_line = 1 *dim_field
+                nb_line = 1
 
             elif self.support.spatial_dimension == 2 :
                 nb_line = 3
