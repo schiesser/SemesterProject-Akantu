@@ -17,6 +17,8 @@
 
 - A-glyphs.pvsm, barre_paraview.csv : file to plot the result of the "test_CurlOperator.py" on paraview.
 
+- ReportOperatorAkantu.pdf : project report
+
 - ClassDiagram.pdf : class diagram
 ## References
 - NumPy documentation
