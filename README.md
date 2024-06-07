@@ -16,6 +16,8 @@
 - test_segment2.py, test_segment3.py, test_triangle3.py : files with assertion that control the class N, matmul operation, transpose, class integrate and class assembly.
 
 - A-glyphs.pvsm, barre_paraview.csv : file to plot the result of the "test_CurlOperator.py" on paraview.
+
+- ClassDiagram.pdf : class diagram
 ## References
 - NumPy documentation
   
