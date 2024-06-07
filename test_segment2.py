@@ -68,7 +68,7 @@ expected_result_integration_N = np.array([[0.125,0.5,0.375]])
 np.testing.assert_allclose(AssembledIntN, expected_result_integration_N, atol=tol, err_msg="integration of N isn't correct")
 
 ## Grad(N) :
-Bgroup = GradientOperator(Ngroup)
+Bgroup = Grad(Ngroup)
 resBgroup = Bgroup.evalOnQuadraturePoints()
 print("B grouped :")
 print(resBgroup)

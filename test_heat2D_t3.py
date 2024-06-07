@@ -55,10 +55,9 @@ Sup = Support(elem_filter, fem, spatial_dimension, elem_type)
 field_dim = 1
 
 ## 3) + 4) Write weak form (using differential operator) and integrate
-shapef = ShapeField(Sup, field_dim)
-gradient = GradientOperator(shapef)
+t = ShapeField(Sup, field_dim)
 
-res_int=FieldIntegrator.integrate(transpose(gradient)@gradient)
+res_int=FieldIntegrator.integrate(transpose(Grad(t))@Grad(t))
 
 ## 5) Assembly
 K = Assembly.assemblyK(res_int,Sup,1)

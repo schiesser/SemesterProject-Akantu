@@ -167,7 +167,7 @@ class transpose(Operator):
     """
     def __init__(self,f):
 
-        if not isinstance(f, (GradientOperator, N, CurlOperator)):
+        if not isinstance(f, (Grad, N, CurlOperator)):
             #can't be used for NodalTensorField
             raise TypeError("Be careful if you want to transpose an object different from grad(N), RotationalOp or N. It transposes the last 2 dimensions of an array. Other possibility : use Contraction class with particular subscripts: it uses einsum form numpy.")
         
@@ -426,17 +426,17 @@ class ConstitutiveLaw(ShapeField):
         self.value_integration_points = np.tile(D, (self.nb_elem, 1, 1, 1))
         return self.value_integration_points
     
-class GradientOperator(Operator):
+class Grad(Operator):
     """
-    GradientOperator class.
+    Gradient operator class.
 
     Differential Operator implemented for :
-        GradientOperator(ShapeField Object), give a "real" gradient. It was used for Heat equation.
-        GradientOperator(N Object), give the matrix B such as epsilon = B@nodal_vector. It was used for Navier eq.
+        Grad(ShapeField Object), give a "real" gradient. It was used for Heat equation.
+        Grad(N Object), give the matrix B such as epsilon = B@nodal_vector. It was used for Navier eq.
 
     Value_integration_points :
-        if GradientOperator(ShapeField Object) has the shape (nb_element,nb_integration_point_per_element, spatial_dimension, nb_nodes_per_elem*field_dimension).
-        if GradientOperator(N Object) has the shape (nb_element, nb_integration_point_per_element, 1(1D) or 3(2D), nb_nodes_per_elem*spatial_dimension ).
+        if Grad(ShapeField Object) has the shape (nb_element,nb_integration_point_per_element, spatial_dimension, nb_nodes_per_elem*field_dimension).
+        if Grad(N Object) has the shape (nb_element, nb_integration_point_per_element, 1(1D) or 3(2D), nb_nodes_per_elem*spatial_dimension ).
     """
     def __init__(self, f1):
         super().__init__(f1)

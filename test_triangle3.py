@@ -83,7 +83,7 @@ np.testing.assert_allclose(AssembledIntN, expected_result_integration_N, atol=to
 
 
 ## Grad(N) :
-Bgroup = GradientOperator(Ngroup)
+Bgroup = Grad(Ngroup)
 resBgroup = Bgroup.evalOnQuadraturePoints()
 print("B grouped :")
 print(resBgroup)

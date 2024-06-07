@@ -74,12 +74,11 @@ field_dim =2
 print("Computation of displacement using differential operator :")
 
 ## 3) + 4) Write weak form (using differential operator) and integrate
-Ngroup = N(Sup, field_dim)
-B = GradientOperator(Ngroup)
+u = N(Sup, field_dim)
 MatrixD = E/((1+nu)*(1-2*nu))*np.array([[1-nu,nu,0],[nu,1-nu,0],[0,0,(1-2*nu)/2]])# Constitutive law (plane constraints)
 D = ConstitutiveLaw(MatrixD, Sup)
 
-BtDB = transpose(B)@D@B
+BtDB = transpose(Grad(u))@D@Grad(u)
 K_locales = FieldIntegrator.integrate(BtDB)
 
 ## 5) Assembly
