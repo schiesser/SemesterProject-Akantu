@@ -7,7 +7,7 @@
   
 - test_heat.py : files that solve a heat equation with 3 types of mesh ( segment2, segment3, triangle3).
   
-- patchtest_navier.py : do a patch test for Navier-Cauchy equation.
+- patchtest_navier.py : do a patch test for Navier equation.
 
 - test_CurlOperator.py : test implementation of curl operator.
 
