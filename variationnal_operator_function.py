@@ -489,14 +489,16 @@ class Grad(Operator):
         
         elif isinstance(self.args[0], ShapeField):
             dim_field = self.args[0].dim_field
-            B_without_dim_extension = np.zeros((self.nb_elem, self.NbIntegrationPoints,1,self.support.spatial_dimension * self.nb_nodes_per_elem))
-            derivatives_shapes = self.support.fem.getShapesDerivatives(self.support.elem_type)
-            derivatives_shapes = derivatives_shapes.reshape((B_without_dim_extension.shape))
+            if dim_field == 1 :
+                B_without_dim_extension = np.zeros((self.nb_elem, self.NbIntegrationPoints,1,self.support.spatial_dimension * self.nb_nodes_per_elem))
+                derivatives_shapes = self.support.fem.getShapesDerivatives(self.support.elem_type)
+                derivatives_shapes = derivatives_shapes.reshape((B_without_dim_extension.shape))
+                
+                for i in range(self.support.spatial_dimension):
+                        self.value_integration_points[:,:,i,:]=derivatives_shapes[:,:,0,i::self.support.spatial_dimension]
+            else :
+                raise NotImplementedError("Only field dimension = 1 has been considered")
             
-            for i in range(self.support.spatial_dimension):
-                for j in range(dim_field):
-                    self.value_integration_points[:,:,i,j::dim_field]=derivatives_shapes[:,:,0,i::self.support.spatial_dimension]
-        
         return self.value_integration_points
     
     def getFieldDimension(self):
