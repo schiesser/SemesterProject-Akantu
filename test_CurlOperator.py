@@ -84,10 +84,9 @@ Sup = Support(elem_filter, fem, spatial_dimension, elem_type)
 field_dim = 3
 
 ## 3) + 4) Write weak form (using differential operator) and integrate
-shapef = ShapeField(Sup, field_dim)
-rot = CurlOperator(shapef)
 
-res_int=FieldIntegrator.integrate(transpose(rot)@rot)
+A = ShapeField(Sup, field_dim)
+res_int=FieldIntegrator.integrate(transpose(curl(A))@curl(A))
 
 ## 5) Assembly
 K = Assembly.assemblyK(res_int,Sup,3)

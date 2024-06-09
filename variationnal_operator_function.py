@@ -167,7 +167,7 @@ class transpose(Operator):
     """
     def __init__(self,f):
 
-        if not isinstance(f, (Grad, N, CurlOperator)):
+        if not isinstance(f, (Grad, N, curl)):
             #can't be used for NodalTensorField
             raise TypeError("Be careful if you want to transpose an object different from grad(N), RotationalOp or N. It transposes the last 2 dimensions of an array. Other possibility : use Contraction class with particular subscripts: it uses einsum form numpy.")
         
@@ -505,12 +505,12 @@ class Grad(Operator):
 
         return np.prod(self.value_integration_points.shape[-2:])
     
-class CurlOperator(Operator):
+class curl(Operator):
     """
-    CurlOperator class. Currently only implemented for a 3D case.
+    curl class. Currently only implemented for a 3D case.
 
     Differential operator implemented for :
-        CurlOperator(ShapeField Object).
+        curl(ShapeField Object).
     
     Value_integration_points (remind : only in 3D):
         has the shape (nb_element,nb_integration_point_per_element, 3, nb_nodes_per_elem*3).
